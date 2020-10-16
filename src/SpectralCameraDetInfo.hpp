@@ -1,0 +1,128 @@
+///###########################################################################
+// This file is part of LImA, a Library for Image Acquisition
+//
+// Copyright (C) : 2009-2020
+// European Synchrotron Radiation Facility
+// BP 220, Grenoble 38043
+// FRANCE
+//
+// This is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 3 of the License, or
+// (at your option) any later version.
+//
+// This software is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, see <http://www.gnu.org/licenses/>.
+//############################################################################
+
+//-----------------------------------------------------------------------------
+/// return the detector pixel size in meter
+//-----------------------------------------------------------------------------
+void Camera::getPixelSize(double& sizex,    ///< [out] horizontal pixel size
+                          double& sizey)    ///< [out] vertical   pixel size
+{
+    DEB_MEMBER_FUNCT();
+    
+    sizex = Camera::g_pixel_size_x;
+    sizey = Camera::g_pixel_size_y;
+    DEB_RETURN() << DEB_VAR2(sizex, sizey); 
+}
+
+//-----------------------------------------------------------------------------
+/// return the detector Max image size 
+//-----------------------------------------------------------------------------
+void Camera::getDetectorMaxImageSize(Size& size) ///< [out] image dimensions
+{
+    DEB_MEMBER_FUNCT();
+    size = Size(0, 0);
+//    size = Size(m_max_image_width, m_max_image_height);
+}
+
+//-----------------------------------------------------------------------------
+/// return the detector image size 
+//-----------------------------------------------------------------------------
+void Camera::getDetectorImageSize(Size& size) ///< [out] image dimensions
+{
+    DEB_MEMBER_FUNCT();
+    
+    size= Size(0, 0);
+
+    DEB_TRACE() << "Size (" << DEB_VAR2(size.getWidth(), size.getHeight()) << ")";
+}
+
+//-----------------------------------------------------------------------------
+/// return the image type
+//-----------------------------------------------------------------------------
+void Camera::getImageType(ImageType& type)
+{
+    DEB_MEMBER_FUNCT();
+
+    type = Bpp16;
+
+/*    long bits_type =  dcamex_getbitsperchannel(m_camera_handle);
+    
+    if (0 != bits_type )
+    {
+        switch( bits_type )
+        {
+            case 8 :  type = Bpp8 ; break;
+            case 16:  type = Bpp16; break;
+            case 32:  type = Bpp32; break;
+            default:
+            {
+                THROW_HW_ERROR(Error) << "No compatible image type";
+            }
+        }
+    }
+    else
+    {
+        THROW_HW_ERROR(Error) << "Unable to get image type.";
+    }*/
+}
+
+//-----------------------------------------------------
+//! Camera::setImageType()
+//-----------------------------------------------------
+void Camera::setImageType(ImageType type)
+{
+    DEB_MEMBER_FUNCT();
+    DEB_TRACE() << "Camera::setImageType - " << DEB_VAR1(type);
+    switch(type)
+    {
+        case Bpp16:
+        {
+            //m_depth = 16;
+            break;
+        }
+        default:
+            THROW_HW_ERROR(Error) << "This pixel format of the camera is not managed, only 16 bits cameras are already managed!";
+            break;
+    }
+
+//    DEB_TRACE() << "SetImageType: " << m_depth;
+}
+
+//-----------------------------------------------------------------------------
+/// return the detector type
+//-----------------------------------------------------------------------------
+void Camera::getDetectorType(std::string& type) ///< [out] detector type
+{
+    DEB_MEMBER_FUNCT();
+    type = "unknown";
+//    type = m_detector_type;
+}
+
+//-----------------------------------------------------------------------------
+/// return the detector model
+//-----------------------------------------------------------------------------
+void Camera::getDetectorModel(std::string& type) ///< [out] detector model
+{
+    DEB_MEMBER_FUNCT();
+    type = "unknown";
+//    type = m_detector_model;
+}
