@@ -1,7 +1,7 @@
 //###########################################################################
 // This file is part of LImA, a Library for Image Acquisition
 //
-// Copyright (C) : 2009-2017
+// Copyright (C) : 2009-2020
 // European Synchrotron Radiation Facility
 // BP 220, Grenoble 38043
 // FRANCE
@@ -27,14 +27,19 @@
 #ifndef SPECTRALCAMERA_H
 #define SPECTRALCAMERA_H
 
+// SYSTEM
 #include <ostream>
 #include <map>
-#include "SpectralCompatibility.h"
+
+// LIMA
 #include "lima/HwBufferMgr.h"
 #include "lima/HwInterface.h"
 #include "lima/HwEventCtrlObj.h"
 #include "lima/HwMaxImageSizeCallback.h"
 #include "lima/Debug.h"
+
+// PROJECT
+#include "SpectralCompatibility.h"
 
 #define REPORT_EVENT(desc) { \
     Event *my_event = new Event(Hardware,Event::Info, Event::Camera, Event::Default,desc); \
@@ -71,11 +76,12 @@ namespace Spectral
 	//-----------------------------------------------------------------------------
 	public:
         // constructor
-        Camera(const std::string & connection_addtress         ,  // server name or IP address of the SI Image SGL II software
+        Camera(const std::string & connection_address          ,  // server name or IP address of the SI Image SGL II software
                unsigned long       connection_port             ,  // TCP/IP port of the SI Image SGL II software
                unsigned long       image_packet_pixels_nb      ,  // number of pixels sent into a image part TCP/IP packet
                unsigned long       image_packet_delay_micro_sec); // delay between the sending of two image part TCP/IP packets (in micro-seconds)
 
+        // destructor
 	    ~Camera();
 
         void init();
@@ -129,6 +135,11 @@ namespace Spectral
         bool isBinningSupported(const int bin_value);
 
 	    //- Spectral specific
+        // access to the singleton
+        static Camera * getInstance();
+
+        // access the singleton (const version)
+        static const Camera * getConstInstance();
 
     //-----------------------------------------------------------------------------
 	private:
@@ -148,6 +159,20 @@ namespace Spectral
         //-----------------------------------------------------------------------------
 		//- Spectral
         //-----------------------------------------------------------------------------
+        // used to give acess to the Camera instance like a singleton
+        static Camera * g_singleton;
+
+        // server name or IP address of the SI Image SGL II software
+        std::string   m_connection_address;
+
+        // TCP/IP port of the SI Image SGL II software
+        unsigned long m_connection_port;
+
+        // number of pixels sent into a image part TCP/IP packet
+        unsigned long m_image_packet_pixels_nb;
+
+        // delay between the sending of two image part TCP/IP packets (in micro-seconds)
+        unsigned long m_image_packet_delay_micro_sec;
 
 		//-----------------------------------------------------------------------------
         // Constants
@@ -155,7 +180,7 @@ namespace Spectral
         static const double g_pixel_size_x;
         static const double g_pixel_size_y;
 	};
-    } // namespace Spectral
+} // namespace Spectral
 } // namespace lima
 
 
