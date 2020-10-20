@@ -20,8 +20,8 @@
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
 /****************************************************************************************************
- * \file   CameraControl.hpp
- * \brief  implementation file of of detector communication class.
+ * \file   CameraControl.cpp
+ * \brief  implementation file of detector communication class.
  * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on October 19, 2020
  ****************************************************************************************************/
