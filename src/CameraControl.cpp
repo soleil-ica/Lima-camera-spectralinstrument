@@ -48,6 +48,8 @@
 using namespace lima;
 using namespace lima::SpectralDetector_ns;
 
+#define SPECTRAL_CAMERA_CONTROL_ACTIVATE_TRAME_TRACE
+
 /****************************************************************************************************
  * \fn CameraControl()
  * \brief  constructor
@@ -98,6 +100,17 @@ CameraControl::~CameraControl()
 void CameraControl::SetConnectionTimeout(int in_connection_timeout_sec)
 {
     m_connection_timeout_sec = in_connection_timeout_sec;
+}
+
+/****************************************************************************************************
+ * \fn void SetCameraIdentifier(int in_camera_identifier)
+ * \brief  configure the camera identifier
+ * \param  in_camera_identifier camera identifier
+ * \return none
+ ****************************************************************************************************/
+void CameraControl::SetCameraIdentifier(int in_camera_identifier)
+{
+    m_camera_identifier = in_camera_identifier;
 }
 
 /****************************************************************************************************
@@ -326,6 +339,441 @@ void CameraControl::disconnect(void)
 
 		m_is_connected = false;
 	}
+}
+
+/****************************************************************************************************
+ * \fn bool send(const std::string & in_command_name, const std::vector<uint8_t> & in_net_buffer, int32_t & out_error)
+ * \brief  send a tcp/ip packet
+ * \param  in_command_name command name used for logging
+ * \param  in_net_buffer   packet buffer
+ * \param  out_error       error code
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::send(const std::string          & in_command_name,
+                         const std::vector<uint8_t> & in_net_buffer  ,
+                         int32_t                    & out_error      )
+{
+    DEB_MEMBER_FUNCT();
+
+    int n;
+
+    // no error by default
+    out_error = 0;
+
+    n = ::send(m_sock, in_net_buffer.data(), in_net_buffer.size(), 0);
+
+#ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_TRAME_TRACE
+    DEB_TRACE() << "CameraControl::send(): " << n << " bytes sent: " << in_command_name;
+#endif
+
+    if(n < 0)
+    {
+        DEB_ERROR() << "CameraControl::send(): write to socket error";
+        out_error = 1;
+    }
+
+    return (n >= 0);
+}
+
+/****************************************************************************************************
+ * \fn bool sendCommand(NetCommandHeader * in_out_command, int32_t & out_error)
+ * \brief  Send a command to the detector
+ * \param  in_out_command command to send
+ * \param  out_error      error code
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::sendCommand(NetCommandHeader * in_out_command, int32_t & out_error)
+{
+    DEB_MEMBER_FUNCT();
+
+    // init command members
+    in_out_command->initPacketLenght();
+    in_out_command->initCameraIdentifier(m_camera_identifier);
+    in_out_command->initSpecificDataLenght();
+
+    // fill a packet buffer
+    std::vector<uint8_t> net_buffer;
+    net_buffer.resize(in_out_command->totalSize(), 0);
+
+    uint8_t *   memory_data = net_buffer.data();
+    std::size_t memory_size = net_buffer.size();
+
+    if(!in_out_command->totalWrite(memory_data, memory_size))
+        return false;
+
+#ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_TRAME_TRACE
+    DEB_TRACE() << "Sending command (" << in_out_command->m_function_number << "): " << in_out_command->m_packet_name;
+#endif
+
+    return send(in_out_command->m_packet_name, net_buffer, out_error);
+}
+
+/****************************************************************************************************
+ * \fn bool receive(uint8_t * out_buffer, const int in_buffer_lenght, int32_t & out_error)
+ * \brief  Receive a tcp/ip packet
+ * \param  out_buffer       receive buffer
+ * \param  in_buffer_lenght receive buffer max size
+ * \param  out_error        error code
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::receive(uint8_t * out_buffer, const int in_buffer_lenght, int32_t & out_error)
+{
+    DEB_MEMBER_FUNCT();
+
+    // no error by default
+    out_error = 0;
+
+    int current_answer_lenght = 0;
+
+    // first, receiving the header
+    // read, until the expected answer length could be read
+    // the answer could be fragmented into several packets
+    for(;;) 
+    {
+        int read_max = in_buffer_lenght - current_answer_lenght; // remaining size to read
+        int n        = recv(m_sock, out_buffer + current_answer_lenght, read_max, 0);
+
+        // Server returned error code ?
+        if (n <= 0)
+        {
+            DEB_ERROR() << "CameraControl::receive(): Could not receive answer.";
+            out_error = 1;
+            return false;
+        }
+
+        current_answer_lenght += n;
+        
+        // complete data was read, so we can leave the loop
+        if (current_answer_lenght == in_buffer_lenght)
+        {
+            break;
+        }
+    }
+
+    return true;
+}
+
+/****************************************************************************************************
+ * \fn bool receiveSubPacket(NetGenericHeader * out_packet, std::vector<uint8_t> & in_out_net_buffer, int32_t & out_error)
+ * \brief  Receive a SI Image SGL II sub packet (a part of the complete packet)
+ * \param  out_packet        sub packet to receive
+ * \param  in_out_net_buffer packet buffer (will grow during the process because data will be concatenated)
+ * \param  out_error         error code
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::receiveSubPacket(NetGenericHeader * out_packet, std::vector<uint8_t> & in_out_net_buffer, int32_t & out_error)
+{
+    DEB_MEMBER_FUNCT();
+
+    const std::size_t previous_size = in_out_net_buffer.size();
+
+    // increasing the buffer size
+    in_out_net_buffer.resize(out_packet->totalSize(), 0);
+
+    if(!receive(in_out_net_buffer.data() + previous_size, out_packet->size(), out_error))
+        return false;
+
+    // filling the buffer data into the header members
+    const uint8_t * memory_data = in_out_net_buffer.data() + previous_size;
+    std::size_t     memory_size = out_packet->size();
+
+    if(!out_packet->read(memory_data, memory_size))
+    {
+        DEB_ERROR() << "CameraControl::receiveSubPacket - Error during the buffer copy into the sub packet!";
+        return false;
+    }
+}
+
+/****************************************************************************************************
+ * \fn bool receiveGenericSubPacket(const NetGenericHeader & in_packet, NetGenericHeader * out_packet, std::vector<uint8_t> & in_out_net_buffer, bool in_final_packet, int32_t & out_error)
+ * \brief  Receive a SI Image SGL II sub packet (a part of the complete packet but not the first one)
+ * \param  in_packet         already received sub packet
+ * \param  out_packet        generic sub packet to receive 
+ * \param  in_out_net_buffer packet buffer (will grow during the process because data will be concatenated)
+ * \param  in_final_packet   is the packet to receive the last one ?
+ * \param  out_error         error code
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::receiveGenericSubPacket(const NetGenericHeader     & in_packet        ,
+                                            NetGenericHeader           * out_packet       , 
+                                            std::vector<uint8_t>       & in_out_net_buffer,
+                                            bool                         in_final_packet  ,       
+                                            int32_t                    & out_error        )
+{
+    DEB_MEMBER_FUNCT();
+
+    // checking the packet lenght
+    if(((in_final_packet ) && (in_packet.m_packet_lenght != out_packet->totalSize())) || 
+       ((!in_final_packet) && (in_packet.m_packet_lenght  < out_packet->totalSize())))
+    {
+        DEB_ERROR() << "CameraControl::receiveGenericSubPacket - Incoherent packet lenght for "
+                    << out_packet->m_packet_name << " packet.";
+        return false;
+    }
+
+    return receiveSubPacket(out_packet, in_out_net_buffer, out_error);
+}
+
+/****************************************************************************************************
+ * \fn bool receiveSpecificSubPacket(const NetGenericHeader & in_packet, const NetGenericAnswer & in_answer_packet, NetGenericHeader * out_packet, std::vector<uint8_t> & in_out_net_buffer, int32_t & out_error)
+ * \brief  Receive a SI Image SGL II sub packet with a specific lenght
+ * \param  in_packet         already received sub packet
+ * \param  in_answer_packet  already received answer sub packet
+ * \param  out_packet        generic sub packet to receive 
+ * \param  in_out_net_buffer packet buffer (will grow during the process because data will be concatenated)
+ * \param  out_error         error code
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::receiveSpecificSubPacket(const NetGenericHeader & in_packet        ,
+                                             const NetGenericAnswer & in_answer_packet ,
+                                             NetGenericHeader       * out_packet       , 
+                                             std::vector<uint8_t>   & in_out_net_buffer,
+                                             int32_t                & out_error        )
+{
+    DEB_MEMBER_FUNCT();
+
+    const std::size_t previous_size = in_out_net_buffer.size();
+
+    // increasing the buffer size
+    in_out_net_buffer.resize(previous_size + in_answer_packet.m_specific_data_lenght, 0);
+
+    if(!receive(in_out_net_buffer.data() + previous_size, in_answer_packet.m_specific_data_lenght, out_error))
+        return false;
+
+    // filling the buffer data into the header members
+    const uint8_t * memory_data = in_out_net_buffer.data() + previous_size;
+    std::size_t     memory_size = in_answer_packet.m_specific_data_lenght;
+
+    if(!out_packet->read(memory_data, memory_size))
+    {
+        DEB_ERROR() << "CameraControl::receiveSubPacket - Error during the buffer copy into the sub packet!";
+        return false;
+    }
+
+    return true;
+}
+
+/****************************************************************************************************
+ * \fn bool FillFullPacket(NetGenericHeader * out_packet, const std::vector<uint8_t> & in_net_buffer, int32_t & out_error)
+ * \brief  Fill the final packet with the data stored in the buffer
+ * \param  out_packet        generic sub packet to be filled
+ * \param  in_net_buffer     packet buffer with the data to copy
+ * \param  out_error         error code
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::FillFullPacket(NetGenericHeader           * out_packet   , 
+                                   const std::vector<uint8_t> & in_net_buffer,
+                                   int32_t                    & out_error    )
+{
+    DEB_MEMBER_FUNCT();
+
+    bool result = true;
+
+    // filling the buffer data into the class members
+    const uint8_t * memory_data = in_net_buffer.data();
+    std::size_t     memory_size = in_net_buffer.size();
+
+    if(!out_packet->totalRead(memory_data, memory_size))
+    {
+        DEB_ERROR() << "CameraControl::receivePacket - Error during the buffer copy into the "
+                    << out_packet->m_packet_name << " packet!";
+        out_error = 1;
+        result = false;
+    }
+    
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool receivePacket(NetGenericHeader * & out_packet, int32_t & out_error)
+ * \brief  Receive a SI Image SGL II packet
+ * \param  out_packet receive packet
+ * \param  out_error  error code
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out_error)
+{
+    DEB_MEMBER_FUNCT();
+
+    out_packet = NULL;
+
+    // at start, we do not know the kind of packet.
+    // we can only receive the generic header to determine the packet type.
+    NetGenericHeader header;
+    std::vector<uint8_t> net_buffer;
+
+    if(!receiveSubPacket(&header, net_buffer, out_error))
+        return false;
+
+    // checking the camera identifier
+    if((header.m_camera_identifier != NetCommandHeader::g_server_command_identifier) &&
+       (header.m_camera_identifier != m_camera_identifier))
+    {
+        DEB_ERROR() << "CameraControl::receivePacket - Incorrect camera indentifier found into the packet header!";
+        return false;
+    }
+
+    // checking the packet identifier to determine the next data block to read
+    // check if this is a command packet
+    if(header.isCommandPacket())
+    {
+        DEB_ERROR() << "CameraControl::receivePacket - A command packet can not be received!";
+        return false;
+    }
+    else
+    // check if this is a acknowledge packet
+    if(header.isAcknowledgePacket())
+    {
+        NetAcknowledge ack;
+
+        if(!receiveGenericSubPacket(header, &ack,  net_buffer, true, out_error))
+            return false;
+
+        // it's ok, we can "return" the packet
+        out_packet = new NetAcknowledge();
+
+        if(!FillFullPacket(out_packet, net_buffer, out_error))
+        {
+            delete out_packet;
+            out_packet = NULL;
+            return false;
+        }
+    }
+    else
+    // check if this is a data packet
+    if(header.isDataPacket())
+    {
+        NetGenericAnswer answer;
+
+        if(!receiveGenericSubPacket(header, &answer,  net_buffer, false, out_error))
+            return false;
+
+        // checking the error code
+        if(answer.m_error_code)
+        {
+        #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_TRAME_TRACE
+            DEB_TRACE() << "received an error into the " << out_packet->m_packet_name << " packet.";
+        #endif
+
+            out_error = answer.m_error_code;
+            return false;
+        }
+
+        // checking the data type to determine the final class to use
+        if(answer.m_data_type == NetGenericAnswer::g_data_type_get_status)
+        {
+            NetAnswerGetStatus get_status;
+
+            if(!receiveSpecificSubPacket(header, answer, &get_status,  net_buffer, out_error))
+                return false;
+
+            // it's ok, we can "return" the packet
+            out_packet = new NetAnswerGetStatus();
+
+            if(!FillFullPacket(out_packet, net_buffer, out_error))
+            {
+                delete out_packet;
+                out_packet = NULL;
+                return false;
+            }
+        }
+        else
+        {
+            DEB_ERROR() << "CameraControl::receivePacket - Unknown data type!";
+            return false;
+        }
+    }
+    else
+    // check if this is an image packet
+    if(header.isImagePacket())
+    {
+        DEB_ERROR() << "CameraControl::receivePacket - Not managed packet type!";
+        return false;
+    }
+    else
+    {
+        DEB_ERROR() << "CameraControl::receivePacket - Unknown packet type!";
+        return false;
+    }
+    
+    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_TRAME_TRACE
+        DEB_TRACE() << "received " << out_packet->m_packet_name << " packet.";
+    #endif
+
+    return true;
+}
+
+/**************************************************************************************************
+ * COMMANDS MANAGEMENT
+ **************************************************************************************************/
+/****************************************************************************************************
+ * \fn bool CameraControl::getStatus()
+ * \brief  Read the current status
+ * \param  none
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::getStatus()
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t error  = 0    ;
+    bool    result = false;
+    NetGenericHeader * first_packet  = NULL;
+    NetGenericHeader * second_packet = NULL;
+    NetCommandHeader * command       = new NetCommandGetStatus();
+    NetGenericAnswer * answer_packet = NULL;
+    NetAcknowledge   * ack_packet    = NULL;
+
+    // Send a command to the detector
+    if(!sendCommand(command, error))
+        goto done;
+
+    // wait for an acknowledge
+    if(!receivePacket(first_packet, error))
+        goto done;
+
+    // check if this is a acknowledge packet
+    if(!first_packet->isAcknowledgePacket())
+        goto done;
+
+    ack_packet = dynamic_cast<NetAcknowledge *>(first_packet);
+
+    // check if the command was accepted
+    if(!(ack_packet->m_accepted_flag))
+    {
+    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_TRAME_TRACE
+        DEB_TRACE() << "Command " << command->m_packet_name << " was not accepted!";
+    #endif
+        goto done;
+    }
+
+    // wait for the status
+    if(!receivePacket(second_packet, error))
+        goto done;
+
+    // check if this is a data packet
+    if(!second_packet->isDataPacket())
+        goto done;
+
+    answer_packet = dynamic_cast<NetGenericAnswer *>(second_packet);
+
+    if(answer_packet->m_data_type == NetGenericAnswer::g_data_type_get_status)
+    {
+        NetAnswerGetStatus * status_packet = dynamic_cast<NetAnswerGetStatus *>(answer_packet);
+        DEB_TRACE() << "!!!!!!! received status:" << status_packet->m_status;
+    }
+
+    result = true;
+
+done:
+//    if(!result)
+    {
+        if(first_packet  == NULL) delete first_packet ;
+        if(second_packet == NULL) delete second_packet;
+        if(command       == NULL) delete command      ;
+    }
+
+    return result;
 }
 
 /**************************************************************************************************

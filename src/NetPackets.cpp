@@ -134,10 +134,13 @@ double ntohd(double in_value)
 }
 
 //===================================================================================================
-// Class NetPacket
+// Class NetGenericHeader
 //===================================================================================================
-uint16_t NetPacket::g_command_get_status_fct_nb = 1011;
-uint16_t NetPacket::g_answer_get_status_data_nb = 2012;
+uint8_t  NetGenericHeader::g_server_command_identifier         = 0   ;
+uint8_t  NetGenericHeader::g_packet_identifier_for_command     = 128 ;
+uint8_t  NetGenericHeader::g_packet_identifier_for_acknowledge = 129 ;
+uint8_t  NetGenericHeader::g_packet_identifier_for_data        = 131 ;
+uint8_t  NetGenericHeader::g_packet_identifier_for_image       = 132 ;
 
 //------------------------------------------------------------
 // specialized template methods for 8 bits unsigned integers
@@ -149,7 +152,7 @@ uint16_t NetPacket::g_answer_get_status_data_nb = 2012;
  * \param  out_class_data class data to be filled 
  * \return none
  ****************************************************************************************************/
-template <> void NetPacket::readData<uint8_t>(const uint8_t * & in_out_memory_data, uint8_t & out_class_data)
+template <> void NetGenericHeader::readData<uint8_t>(const uint8_t * & in_out_memory_data, uint8_t & out_class_data)
 {
     out_class_data = *in_out_memory_data;
     in_out_memory_data++;
@@ -162,7 +165,7 @@ template <> void NetPacket::readData<uint8_t>(const uint8_t * & in_out_memory_da
  * \param  in_class_data class data to be read
  * \return none
  ****************************************************************************************************/
-template <> void NetPacket::writeData<uint8_t>(uint8_t * & in_out_memory_data, uint8_t in_class_data) const
+template <> void NetGenericHeader::writeData<uint8_t>(uint8_t * & in_out_memory_data, uint8_t in_class_data) const
 {
     *in_out_memory_data = in_class_data;
     in_out_memory_data++;
@@ -178,7 +181,7 @@ template <> void NetPacket::writeData<uint8_t>(uint8_t * & in_out_memory_data, u
  * \param  out_class_data class data to be filled 
  * \return none
  ****************************************************************************************************/
-template <> void NetPacket::readData<int16_t>(const uint8_t * & in_out_memory_data, int16_t & out_class_data)
+template <> void NetGenericHeader::readData<int16_t>(const uint8_t * & in_out_memory_data, int16_t & out_class_data)
 {
     out_class_data = INT16_TO_HOST(*(reinterpret_cast<const int16_t * >(in_out_memory_data)));
     in_out_memory_data += sizeof(int16_t);
@@ -191,7 +194,7 @@ template <> void NetPacket::readData<int16_t>(const uint8_t * & in_out_memory_da
  * \param  in_class_data class data to be read
  * \return none
  ****************************************************************************************************/
-template <> void NetPacket::writeData<int16_t>(uint8_t * & in_out_memory_data, int16_t in_class_data) const
+template <> void NetGenericHeader::writeData<int16_t>(uint8_t * & in_out_memory_data, int16_t in_class_data) const
 {
     *(reinterpret_cast<int16_t * >(in_out_memory_data)) = INT16_TO_NETWORK(in_class_data);
     in_out_memory_data += sizeof(int16_t);
@@ -207,7 +210,7 @@ template <> void NetPacket::writeData<int16_t>(uint8_t * & in_out_memory_data, i
  * \param  out_class_data class data to be filled 
  * \return none
  ****************************************************************************************************/
-template <> void NetPacket::readData<uint16_t>(const uint8_t * & in_out_memory_data, uint16_t & out_class_data)
+template <> void NetGenericHeader::readData<uint16_t>(const uint8_t * & in_out_memory_data, uint16_t & out_class_data)
 {
     out_class_data = UINT16_TO_HOST(*(reinterpret_cast<const uint16_t * >(in_out_memory_data)));
     in_out_memory_data += sizeof(uint16_t);
@@ -220,7 +223,7 @@ template <> void NetPacket::readData<uint16_t>(const uint8_t * & in_out_memory_d
  * \param  in_class_data class data to be read
  * \return none
  ****************************************************************************************************/
-template <> void NetPacket::writeData<uint16_t>(uint8_t * & in_out_memory_data, uint16_t in_class_data) const
+template <> void NetGenericHeader::writeData<uint16_t>(uint8_t * & in_out_memory_data, uint16_t in_class_data) const
 {
     *(reinterpret_cast<uint16_t * >(in_out_memory_data)) = UINT16_TO_NETWORK(in_class_data);
     in_out_memory_data += sizeof(uint16_t);
@@ -236,7 +239,7 @@ template <> void NetPacket::writeData<uint16_t>(uint8_t * & in_out_memory_data, 
  * \param  out_class_data class data to be filled 
  * \return none
  ****************************************************************************************************/
-template <> void NetPacket::readData<int32_t>(const uint8_t * & in_out_memory_data, int32_t & out_class_data)
+template <> void NetGenericHeader::readData<int32_t>(const uint8_t * & in_out_memory_data, int32_t & out_class_data)
 {
     out_class_data = INT32_TO_HOST(*(reinterpret_cast<const int32_t * >(in_out_memory_data)));
     in_out_memory_data += sizeof(int32_t);
@@ -249,7 +252,7 @@ template <> void NetPacket::readData<int32_t>(const uint8_t * & in_out_memory_da
  * \param  in_class_data class data to be read
  * \return none
  ****************************************************************************************************/
-template <> void NetPacket::writeData<int32_t>(uint8_t * & in_out_memory_data, int32_t in_class_data) const
+template <> void NetGenericHeader::writeData<int32_t>(uint8_t * & in_out_memory_data, int32_t in_class_data) const
 {
     *(reinterpret_cast<int32_t * >(in_out_memory_data)) = INT32_TO_NETWORK(in_class_data);
     in_out_memory_data += sizeof(int32_t);
@@ -265,7 +268,7 @@ template <> void NetPacket::writeData<int32_t>(uint8_t * & in_out_memory_data, i
  * \param  out_class_data class data to be filled 
  * \return none
  ****************************************************************************************************/
-template <> void NetPacket::readData<uint32_t>(const uint8_t * & in_out_memory_data, uint32_t & out_class_data)
+template <> void NetGenericHeader::readData<uint32_t>(const uint8_t * & in_out_memory_data, uint32_t & out_class_data)
 {
     out_class_data = UINT32_TO_HOST(*(reinterpret_cast<const uint32_t * >(in_out_memory_data)));
     in_out_memory_data += sizeof(uint32_t);
@@ -278,7 +281,7 @@ template <> void NetPacket::readData<uint32_t>(const uint8_t * & in_out_memory_d
  * \param  in_class_data class data to be read
  * \return none
  ****************************************************************************************************/
-template <> void NetPacket::writeData<uint32_t>(uint8_t * & in_out_memory_data, uint32_t in_class_data) const
+template <> void NetGenericHeader::writeData<uint32_t>(uint8_t * & in_out_memory_data, uint32_t in_class_data) const
 {
     *(reinterpret_cast<uint32_t * >(in_out_memory_data)) = UINT32_TO_NETWORK(in_class_data);
     in_out_memory_data += sizeof(uint32_t);
@@ -294,7 +297,7 @@ template <> void NetPacket::writeData<uint32_t>(uint8_t * & in_out_memory_data, 
  * \param  out_class_data class data to be filled 
  * \return none
  ****************************************************************************************************/
-template <> void NetPacket::readData<double>(const uint8_t * & in_out_memory_data, double & out_class_data)
+template <> void NetGenericHeader::readData<double>(const uint8_t * & in_out_memory_data, double & out_class_data)
 {
     out_class_data = DOUBLE_TO_HOST(*(reinterpret_cast<const double * >(in_out_memory_data)));
     in_out_memory_data += sizeof(double);
@@ -307,15 +310,12 @@ template <> void NetPacket::readData<double>(const uint8_t * & in_out_memory_dat
  * \param  in_class_data class data to be read
  * \return none
  ****************************************************************************************************/
-template <> void NetPacket::writeData<double>(uint8_t * & out_memory_data, double in_class_data) const
+template <> void NetGenericHeader::writeData<double>(uint8_t * & out_memory_data, double in_class_data) const
 {
     *(reinterpret_cast<double * >(out_memory_data)) = DOUBLE_TO_NETWORK(in_class_data);
     out_memory_data += sizeof(double);
 }
 
-//===================================================================================================
-// Class NetGenericHeader
-//===================================================================================================
 /****************************************************************************************************
  * \fn NetGenericHeader()
  * \brief  constructor
@@ -327,6 +327,51 @@ NetGenericHeader::NetGenericHeader()
     m_packet_lenght     = 0; // total number of bytes in packet
     m_packet_identifier = 0; 
     m_camera_identifier = 0; // 0 for server commands, Camera number (1..max)
+    m_packet_name       = "NetGenericHeader";
+}
+
+/****************************************************************************************************
+ * \fn isCommandPacket()
+ * \brief  check if this is a command packet
+ * \param  none
+ * \return true if this is a command packet
+ ****************************************************************************************************/
+bool NetGenericHeader::isCommandPacket() const
+{
+    return (m_packet_identifier == NetGenericHeader::g_packet_identifier_for_command);
+}
+
+/****************************************************************************************************
+ * \fn isCommandPacket()
+ * \brief  check if this is a acknowledge packet
+ * \param  none
+ * \return true if this is a acknowledge packet
+ ****************************************************************************************************/
+bool NetGenericHeader::isAcknowledgePacket() const
+{
+    return (m_packet_identifier == NetGenericHeader::g_packet_identifier_for_acknowledge);
+}
+
+/****************************************************************************************************
+ * \fn isDataPacket()
+ * \brief  check if this is a data packet
+ * \param  none
+ * \return true if this is a data packet
+ ****************************************************************************************************/
+bool NetGenericHeader::isDataPacket() const
+{
+    return (m_packet_identifier == NetGenericHeader::g_packet_identifier_for_data);
+}
+
+/****************************************************************************************************
+ * \fn isImagePacket()
+ * \brief  check if this is an image packet
+ * \param  none
+ * \return true if this is an image packet
+ ****************************************************************************************************/
+bool NetGenericHeader::isImagePacket() const
+{
+    return (m_packet_identifier == NetGenericHeader::g_packet_identifier_for_image);
 }
 
 /****************************************************************************************************
@@ -422,6 +467,8 @@ bool NetGenericHeader::totalWrite(uint8_t * & in_out_memory_data, std::size_t & 
 //===================================================================================================
 // Class NetCommandHeader
 //===================================================================================================
+uint16_t NetCommandHeader::g_function_number_get_status = 1011;
+
 /****************************************************************************************************
  * \fn NetCommandHeader()
  * \brief  constructor
@@ -430,8 +477,43 @@ bool NetGenericHeader::totalWrite(uint8_t * & in_out_memory_data, std::size_t & 
  ****************************************************************************************************/
 NetCommandHeader::NetCommandHeader()
 {
-    m_function_number      = 0; // function to be executed (1000 .. 1999)
-    m_specific_data_lenght = 0; // length of parameter block following (0, if none)
+    m_function_number      = 0   ; // function to be executed (1000 .. 1999)
+    m_specific_data_lenght = 0   ; // length of parameter block following (0, if none)
+    m_is_server_command    = true; // some commands are server related, others to a camera
+    m_packet_name          = "NetCommandHeader";
+}
+
+/****************************************************************************************************
+ * \fn void initPacketLenght()
+ * \brief  init the packet lenght member
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void NetCommandHeader::initPacketLenght()
+{
+    m_packet_lenght = totalSize(); // total number of bytes in packet
+}
+
+/****************************************************************************************************
+ * \fn void initCameraIdentifier(uint8_t in_camera_identifier)
+ * \brief  init the camera identifier member
+ * \param  in_camera_identifier camera identifier, will only be used for a camera command
+ * \return none
+ ****************************************************************************************************/
+void NetCommandHeader::initCameraIdentifier(uint8_t in_camera_identifier)
+{
+    m_camera_identifier = (m_is_server_command) ? g_server_command_identifier : in_camera_identifier;
+}
+
+/****************************************************************************************************
+ * \fn void initSpecificDataLenght()
+ * \brief  init the specific data lenght
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void NetCommandHeader::initSpecificDataLenght()
+{
+    m_specific_data_lenght = totalSize() - NetCommandHeader::totalSize();
 }
 
 /****************************************************************************************************
@@ -538,7 +620,9 @@ bool NetCommandHeader::totalWrite(uint8_t * & in_out_memory_data, std::size_t & 
  ****************************************************************************************************/
 NetCommandGetStatus::NetCommandGetStatus()
 {
-    m_function_number = NetPacket::g_command_get_status_fct_nb; // function to be executed (1000 .. 1999)
+    m_function_number   = NetCommandHeader::g_function_number_get_status; // function to be executed (1000 .. 1999)
+    m_packet_name       = "Command GetStatus";
+    m_is_server_command = false; // some commands are server related, others to a camera
 }
 
 //===================================================================================================
@@ -553,6 +637,7 @@ NetCommandGetStatus::NetCommandGetStatus()
 NetAcknowledge::NetAcknowledge()
 {
     m_accepted_flag = 0; // true (!0) or false (0)
+    m_packet_name   = "Answer Acknowledge";
 }
 
 /****************************************************************************************************
@@ -648,6 +733,8 @@ bool NetAcknowledge::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in
 //===================================================================================================
 // Class NetGenericAnswer
 //===================================================================================================
+uint16_t NetGenericAnswer::g_data_type_get_status = 2012;
+
 /****************************************************************************************************
  * \fn NetGenericAnswer()
  * \brief  constructor
@@ -659,6 +746,7 @@ NetGenericAnswer::NetGenericAnswer()
     m_error_code           = 0; // 0 = no error
     m_data_type            = 0; // 2000 .. 2999
     m_specific_data_lenght = 0; // 0 = no data
+    m_packet_name          = "NetGenericAnswer";
 }
 
 /****************************************************************************************************
@@ -768,6 +856,7 @@ bool NetGenericAnswer::totalWrite(uint8_t * & in_out_memory_data, std::size_t & 
  ****************************************************************************************************/
 NetAnswerGetStatus::NetAnswerGetStatus()
 {
+    m_packet_name = "Answer GetStatus";
 }
 
 /****************************************************************************************************
