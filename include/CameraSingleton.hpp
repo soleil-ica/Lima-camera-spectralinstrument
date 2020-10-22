@@ -33,7 +33,7 @@
 /* used to store the singleton
  */
 template <class Elem>
-lima::AutoPtr<Elem> CameraSingleton<Elem>::g_singleton = NULL;
+Elem * CameraSingleton<Elem>::g_singleton = NULL;
 
 /****************************************************************************************************
  * CLASS METHODS
@@ -61,6 +61,24 @@ CameraSingleton<Elem>::~CameraSingleton()
 }
 
 /****************************************************************************************************
+ * \fn template <class Elem> void CameraSingleton<Elem>::init(Elem * in_new)
+ * \brief  init the singleton
+ * \param  in_new new singleton instance
+ * \return none
+ ****************************************************************************************************/
+template <class Elem>
+void CameraSingleton<Elem>::init(Elem * in_new)
+{
+    if(g_singleton != in_new)
+    {
+        if(g_singleton != NULL)
+            release();
+        
+        g_singleton = in_new;
+    }
+}
+
+/****************************************************************************************************
  * \fn template <class Elem> void CameraSingleton<Elem>::specificRelease()
  * \brief  release the singleton (execute a specific code of a derived class)
  * \param  none
@@ -80,33 +98,34 @@ void CameraSingleton<Elem>::specificRelease()
 template <class Elem>
 void CameraSingleton<Elem>::release()
 {
-    if(!CameraSingleton::g_singleton.getPtr() == NULL)
+    if(CameraSingleton::g_singleton != NULL)
     {
         CameraSingleton::g_singleton->specificRelease();
+        delete CameraSingleton::g_singleton;
         CameraSingleton::g_singleton = NULL;
     }
 }
 
 /****************************************************************************************************
- * \fn template <class Elem> lima::AutoPtr<Elem> CameraSingleton<Elem>::getInstance
+ * \fn template <class Elem> Elem * CameraSingleton<Elem>::getInstance
  * \brief  access to the singleton
  * \param  none
  * \return singleton
  ****************************************************************************************************/
 template <class Elem>
-lima::AutoPtr<Elem> CameraSingleton<Elem>::getInstance()
+Elem * CameraSingleton<Elem>::getInstance()
 {
     return CameraSingleton::g_singleton;
 }
 
 /****************************************************************************************************
- * \fn template <class Elem> lima::AutoPtr<const Elem> CameraSingleton<Elem>::getConstInstance
+ * \fn template <class Elem> const Elem * CameraSingleton<Elem>::getConstInstance
  * \brief  access to the singleton (const version)
  * \param  none
  * \return singleton (const version)
  ****************************************************************************************************/
 template <class Elem>
-lima::AutoPtr<const Elem> CameraSingleton<Elem>::getConstInstance()
+const Elem * CameraSingleton<Elem>::getConstInstance()
 {
     return CameraSingleton::g_singleton;
 }

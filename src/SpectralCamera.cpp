@@ -30,10 +30,10 @@
 // PROJECT
 #include "SpectralCamera.h"
 #include "CameraControl.h"
+#include "CameraReceiveDataThread.h"
 
 using namespace lima;
 using namespace lima::Spectral;
-using namespace lima::SpectralDetector_ns;
 
 //-----------------------------------------------------------------------------
 const double Camera::g_pixel_size_x = 75e-6; // pixel size is ? micron
@@ -84,13 +84,13 @@ Camera::Camera(const std::string & connection_address          ,
     CameraControl::create();
 
     // starting the tcp/ip connection
-    CameraControl::getInstance()->SetConnectionTimeout(connection_timeout_sec);
-    CameraControl::getInstance()->SetCameraIdentifier (camera_identifier     );
+    CameraControl::getInstance()->setConnectionTimeout(connection_timeout_sec);
+    CameraControl::getInstance()->setCameraIdentifier (camera_identifier     );
 
     CameraControl::getInstance()->connect(m_connection_address, m_connection_port);
 
     // temporary...
-    CameraControl::getInstance()->getStatus();
+    Camera::Status status = getStatus();
 
     if(0)
     {

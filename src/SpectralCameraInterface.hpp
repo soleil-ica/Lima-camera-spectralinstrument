@@ -27,7 +27,28 @@ Camera::Status Camera::getStatus() ///< [out] current camera status
 {
     DEB_MEMBER_FUNCT();
 
-    return Camera::Ready   ;
+    Camera::Status result = Camera::Status::Fault;
+
+    CameraControl::getInstance()->updateStatus();
+    
+    CameraControl::DetectorStatus detector_status = CameraControl::getConstInstance()->getLatestStatus();
+
+    if(detector_status == CameraControl::DetectorStatus::Ready)
+        result = Camera::Status::Ready;
+    else
+    if(detector_status == CameraControl::DetectorStatus::Exposure)
+        result = Camera::Status::Exposure;
+    else
+    if(detector_status == CameraControl::DetectorStatus::Readout)
+        result = Camera::Status::Readout;
+    else
+    if(detector_status == CameraControl::DetectorStatus::Latency)
+        result = Camera::Status::Latency;
+    else
+    if(detector_status == CameraControl::DetectorStatus::Fault)
+        result = Camera::Status::Fault;
+
+    return result;
 }
 
 //-----------------------------------------------------------------------------

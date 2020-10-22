@@ -28,6 +28,7 @@
 
 // PROJECT
 #include "CameraControl.h"
+#include "CameraReceiveDataThread.h"
 
 // SYSTEM
 #include <netinet/tcp.h>
@@ -40,15 +41,17 @@
 #include <iostream>
 #include <errno.h>  
 #include <sys/time.h>
+#include <sstream>
 
 // LIMA
 #include "lima/Exceptions.h"
 #include "lima/Debug.h"
 
 using namespace lima;
-using namespace lima::SpectralDetector_ns;
+using namespace lima::Spectral;
 
-#define SPECTRAL_CAMERA_CONTROL_ACTIVATE_TRAME_TRACE
+#define SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
+#define SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
 
 /****************************************************************************************************
  * \fn CameraControl()
@@ -62,6 +65,7 @@ CameraControl::CameraControl()
 
     m_connection_timeout_sec = 0;
     m_is_connected = false;
+    m_latest_status = DetectorStatus::Ready;
 
 	// Ignore the sigpipe we get we try to send quit to
 	// dead server in disconnect, just use error codes
@@ -92,36 +96,47 @@ CameraControl::~CameraControl()
 }
 
 /****************************************************************************************************
- * \fn void SetConnectionTimeout(int in_connection_timeout_sec)
+ * \fn void setConnectionTimeout(int in_connection_timeout_sec)
  * \brief  configure the connection timeout in seconds
  * \param  in_connection_timeout_sec new connection timeout in seconds
  * \return none
  ****************************************************************************************************/
-void CameraControl::SetConnectionTimeout(int in_connection_timeout_sec)
+void CameraControl::setConnectionTimeout(int in_connection_timeout_sec)
 {
     m_connection_timeout_sec = in_connection_timeout_sec;
 }
 
 /****************************************************************************************************
- * \fn void SetCameraIdentifier(int in_camera_identifier)
+ * \fn void setCameraIdentifier(int in_camera_identifier)
  * \brief  configure the camera identifier
  * \param  in_camera_identifier camera identifier
  * \return none
  ****************************************************************************************************/
-void CameraControl::SetCameraIdentifier(int in_camera_identifier)
+void CameraControl::setCameraIdentifier(int in_camera_identifier)
 {
     m_camera_identifier = in_camera_identifier;
 }
 
 /****************************************************************************************************
- * \fn bool not_blocking_connect(struct sockaddr_in & in_out_sa, int in_sock, int in_timeout)
+ * \fn void DetectorStatus getLatestStatus() const
+ * \brief  get the latest hardware status
+ * \param  none
+ * \return latest status
+ ****************************************************************************************************/
+CameraControl::DetectorStatus CameraControl::getLatestStatus() const
+{
+    return m_latest_status;
+}
+
+/****************************************************************************************************
+ * \fn bool notBlockingConnect(struct sockaddr_in & in_out_sa, int in_sock, int in_timeout)
  * \brief  execute a not blocking connect
  * \param  in_out_sa connection host
  * \param  in_sock socket to connect 
  * \param  in_timeout connection delay in seconds
  * \return return false on a system call error, true on success
  ****************************************************************************************************/
-bool CameraControl::not_blocking_connect(struct sockaddr_in & in_out_sa, int in_sock, int in_timeout)
+bool CameraControl::notBlockingConnect(struct sockaddr_in & in_out_sa, int in_sock, int in_timeout)
 {   
     DEB_MEMBER_FUNCT();
 
@@ -159,9 +174,11 @@ bool CameraControl::not_blocking_connect(struct sockaddr_in & in_out_sa, int in_
     // the connect call is on the global namespace (::) to avoid a compile error.
     if((ret = ::connect(in_sock, (struct sockaddr *)&in_out_sa, sizeof(struct sockaddr_in))) < 0)
     {
-        DEB_ERROR() << "connect failed!";
         if (errno != EINPROGRESS)
+        {
+            DEB_ERROR() << "connect failed!";
             return false;
+        }
     }
     else
     // then connect succeeded right away
@@ -277,7 +294,7 @@ void CameraControl::connect(const std::string & in_hostname, int in_port)
 	endhostent();
 
     // connect try
-    if(!not_blocking_connect(m_server_name, m_sock, m_connection_timeout_sec))
+    if(!notBlockingConnect(m_server_name, m_sock, m_connection_timeout_sec))
     {
 		close(m_sock);
 
@@ -317,6 +334,12 @@ void CameraControl::connect(const std::string & in_hostname, int in_port)
     DEB_TRACE() << "Connected to server: " << in_hostname << ":" << in_port;
 
     m_is_connected = true;
+
+    // creating the data reception thread
+    CameraReceiveDataThread::create();
+    
+    // starting the data reception
+    CameraReceiveDataThread::startReception();
 }
 
 /****************************************************************************************************
@@ -333,6 +356,12 @@ void CameraControl::disconnect(void)
     if (m_is_connected) 
     {
         DEB_TRACE() << "Disconnection to server";
+
+        // Stopping the data reception
+        CameraReceiveDataThread::stopReception();
+
+        // Releasing the data reception thread
+        CameraReceiveDataThread::release();
 
         shutdown(m_sock, 2); // 2 for stopping both reception and transmission
 		close   (m_sock   );
@@ -362,7 +391,7 @@ bool CameraControl::send(const std::string          & in_command_name,
 
     n = ::send(m_sock, in_net_buffer.data(), in_net_buffer.size(), 0);
 
-#ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_TRAME_TRACE
+#ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
     DEB_TRACE() << "CameraControl::send(): " << n << " bytes sent: " << in_command_name;
 #endif
 
@@ -391,6 +420,10 @@ bool CameraControl::sendCommand(NetCommandHeader * in_out_command, int32_t & out
     in_out_command->initCameraIdentifier(m_camera_identifier);
     in_out_command->initSpecificDataLenght();
 
+#ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
+    in_out_command->totalLog();
+#endif
+
     // fill a packet buffer
     std::vector<uint8_t> net_buffer;
     net_buffer.resize(in_out_command->totalSize(), 0);
@@ -401,7 +434,7 @@ bool CameraControl::sendCommand(NetCommandHeader * in_out_command, int32_t & out
     if(!in_out_command->totalWrite(memory_data, memory_size))
         return false;
 
-#ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_TRAME_TRACE
+#ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
     DEB_TRACE() << "Sending command (" << in_out_command->m_function_number << "): " << in_out_command->m_packet_name;
 #endif
 
@@ -605,6 +638,10 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
     if(!receiveSubPacket(&header, net_buffer, out_error))
         return false;
 
+#ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
+    header.log();
+#endif
+
     // checking the camera identifier
     if((header.m_camera_identifier != NetCommandHeader::g_server_command_identifier) &&
        (header.m_camera_identifier != m_camera_identifier))
@@ -629,6 +666,10 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
         if(!receiveGenericSubPacket(header, &ack,  net_buffer, true, out_error))
             return false;
 
+    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
+        ack.log();
+    #endif
+
         // it's ok, we can "return" the packet
         out_packet = new NetAcknowledge();
 
@@ -648,10 +689,14 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
         if(!receiveGenericSubPacket(header, &answer,  net_buffer, false, out_error))
             return false;
 
+    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
+        answer.log();
+    #endif
+
         // checking the error code
         if(answer.m_error_code)
         {
-        #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_TRAME_TRACE
+        #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
             DEB_TRACE() << "received an error into the " << out_packet->m_packet_name << " packet.";
         #endif
 
@@ -696,7 +741,7 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
         return false;
     }
     
-    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_TRAME_TRACE
+    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
         DEB_TRACE() << "received " << out_packet->m_packet_name << " packet.";
     #endif
 
@@ -707,29 +752,26 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
  * COMMANDS MANAGEMENT
  **************************************************************************************************/
 /****************************************************************************************************
- * \fn bool CameraControl::getStatus()
- * \brief  Read the current status
- * \param  none
+ * \fn bool sendCommandWithAck(NetCommandHeader * in_out_command, int32_t & out_error)
+ * \brief  Send a command to the detector and wait for the acknowledge
+ * \param  in_out_command command to send
+ * \param  out_error      error code
  * \return true if succeed, false in case of error
  ****************************************************************************************************/
-bool CameraControl::getStatus()
+bool CameraControl::sendCommandWithAck(NetCommandHeader * in_out_command, int32_t & out_error)
 {
     DEB_MEMBER_FUNCT();
 
-    int32_t error  = 0    ;
-    bool    result = false;
-    NetGenericHeader * first_packet  = NULL;
-    NetGenericHeader * second_packet = NULL;
-    NetCommandHeader * command       = new NetCommandGetStatus();
-    NetGenericAnswer * answer_packet = NULL;
-    NetAcknowledge   * ack_packet    = NULL;
+    bool               result       = false;
+    NetGenericHeader * first_packet = NULL ;
+    NetAcknowledge   * ack_packet   = NULL ;
 
     // Send a command to the detector
-    if(!sendCommand(command, error))
+    if(!sendCommand(in_out_command, out_error))
         goto done;
 
     // wait for an acknowledge
-    if(!receivePacket(first_packet, error))
+    if(!receivePacket(first_packet, out_error))
         goto done;
 
     // check if this is a acknowledge packet
@@ -739,13 +781,84 @@ bool CameraControl::getStatus()
     ack_packet = dynamic_cast<NetAcknowledge *>(first_packet);
 
     // check if the command was accepted
-    if(!(ack_packet->m_accepted_flag))
+    if (!(ack_packet->wasAccepted()))
     {
-    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_TRAME_TRACE
-        DEB_TRACE() << "Command " << command->m_packet_name << " was not accepted!";
+    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
+        DEB_TRACE() << "Command " << in_out_command->m_packet_name << " was not accepted!";
     #endif
         goto done;
     }
+    else
+    {
+        result = true;
+    }
+
+done:
+    if(first_packet  == NULL)
+        delete first_packet ;
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool getSubString(const std::string & in_string, std::size_t in_pos, const std::string & in_delimiter, std::string & out_sub_string)
+ * \brief  Cut a substring with a position and delimiter
+ * \param  in_string source string
+ * \param  in_pos substring position (starts at 0)
+ * \param  in_pos substring delimiter
+ * \param  out_sub_string found substring
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::getSubString(const std::string & in_string     ,
+                                 std::size_t         in_pos        ,
+                                 const std::string & in_delimiter  ,
+                                 std::string       & out_sub_string)
+{
+    std::size_t last = 0;
+    std::size_t next = 0;
+    std::size_t pos  = 0;
+    
+    while ((next = in_string.find(in_delimiter, last)) != std::string::npos)
+    {   
+        // found the value ?
+        if(pos == in_pos)
+        {
+            out_sub_string = in_string.substr(last, next - last);
+            return true;
+        }
+        last = next + 1;
+        pos++;
+    } 
+
+    // found the value in the last position ?
+    if(pos == in_pos)
+    {
+        out_sub_string = in_string.substr(last);
+        return true;
+    }
+
+    return false;
+}
+
+/****************************************************************************************************
+ * \fn bool CameraControl::updateStatus()
+ * \brief  Update the current status by sending a command to the hardware
+ * \param  none
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::updateStatus()
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t            error         = 0    ;
+    bool               result        = false;
+    NetGenericHeader * second_packet = NULL ;
+    NetGenericAnswer * answer_packet = NULL ;
+    NetCommandHeader * command       = new NetCommandGetStatus();
+
+    // send the command and treat the acknowledge
+    if(!sendCommandWithAck(command, error))
+        goto done;
 
     // wait for the status
     if(!receivePacket(second_packet, error))
@@ -760,18 +873,69 @@ bool CameraControl::getStatus()
     if(answer_packet->m_data_type == NetGenericAnswer::g_data_type_get_status)
     {
         NetAnswerGetStatus * status_packet = dynamic_cast<NetAnswerGetStatus *>(answer_packet);
-        DEB_TRACE() << "!!!!!!! received status:" << status_packet->m_status;
-    }
 
-    result = true;
+        // we need to retrieve the status data 
+        int status_value;
+
+        std::string line   ;
+        std::string status = status_packet->m_status;
+        
+        std::istringstream iss(status);
+
+        while (std::getline(iss, line))
+        {
+            // search the status key
+            if (line.find(NetAnswerGetStatus::g_server_flags_status_name) != std::string::npos) 
+            {
+                std::string sub_string;
+
+                if(!getSubString(line, NetAnswerGetStatus::g_server_flags_value_position, 
+                                 NetAnswerGetStatus::g_server_flags_delimiter, sub_string))
+                {
+                    goto done;
+                }
+
+                std::istringstream ss(sub_string);
+                ss >> status_value;
+
+                if (ss.fail() || (ss.rdbuf()->in_avail() > 0))
+                {
+                    ss.clear();
+                    goto done;
+                }
+                else
+                {
+    std::cout << "!!!!!!status_value: " <<status_value<< std::endl;
+
+                    // conversion of the hardware status to a detector status
+                    DetectorStatus new_status = DetectorStatus::Fault;
+
+                    if(status_value & NetAnswerGetStatus::HardwareStatus::CameraConnected)
+                    {
+                        if(!(status_value & NetAnswerGetStatus::HardwareStatus::ConfigurationError))
+                        {
+                            if(status_value & NetAnswerGetStatus::HardwareStatus::AcquisitionInProgress)
+                            {
+                                new_status = DetectorStatus::Exposure;
+                            }
+                            else
+                            {
+                                new_status = DetectorStatus::Ready;
+                            }
+                        }
+                    }
+
+                    m_latest_status = new_status;
+                    result          = true      ;
+                    break;
+                }
+            }        
+        }
+    }
 
 done:
-//    if(!result)
-    {
-        if(first_packet  == NULL) delete first_packet ;
-        if(second_packet == NULL) delete second_packet;
-        if(command       == NULL) delete command      ;
-    }
+    if(second_packet == NULL) delete second_packet;
+    if(command       == NULL) delete command      ;
 
     return result;
 }
@@ -787,7 +951,7 @@ done:
  ****************************************************************************************************/
 void CameraControl::create()
 {
-    CameraControl::g_singleton = new CameraControl();
+    init(new CameraControl());
 }
 
 //###########################################################################

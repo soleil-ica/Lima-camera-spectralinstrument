@@ -57,7 +57,6 @@
 
 // LIMA 
 #include "lima/Debug.h"
-#include "lima/AutoObj.h"
 
 /*
  *  \namespace lima
@@ -65,9 +64,9 @@
 namespace lima
 {
 /*
- *  \namespace SpectralDetector_ns
+ *  \namespace Spectral
  */
-namespace SpectralDetector_ns 
+namespace Spectral 
 {
 /*
  *  \class CameraControl
@@ -77,15 +76,30 @@ class CameraControl : public CameraSingleton<CameraControl>
 {
     DEB_CLASS_NAMESPC(DebModCamera, "CameraControl", "Spectral");
 
-    // we need to gain access to the destructor for yat::SharedPtr management of our singleton
-    friend class lima::AutoPtr<CameraControl>;
+    // we need to gain access to the destructor for the management of our singleton
+    friend class CameraSingleton<CameraControl>;
+
+    public:
+        // detector status values
+        typedef enum DetectorStatus
+        {
+            Ready      , // ready to start acquisition
+            Exposure   , // running an exposure
+            Readout    , // running a readout
+            Latency    , // running a latency
+            Fault      , // acquisition stopped externally or unexpected error 
+
+        } DetectorStatus;
 
     public:
         // configure the connection timeout in seconds
-        void SetConnectionTimeout(int in_connection_timeout_sec);
+        void setConnectionTimeout(int in_connection_timeout_sec);
 
         // configure the camera identifier
-        void SetCameraIdentifier(int in_camera_identifier);
+        void setCameraIdentifier(int in_camera_identifier);
+
+        // get the latest hardware status
+        CameraControl::DetectorStatus getLatestStatus() const;
 
         // connect the instance to the detector software (tcp/ip)
         void connect(const std::string & in_hostname, int in_port);
@@ -102,24 +116,14 @@ class CameraControl : public CameraSingleton<CameraControl>
        /**************************************************************************************************
         * COMMANDS MANAGEMENT
         **************************************************************************************************/
-        // Read the current status
-        bool getStatus();
+        // Update the current status by sending a command to the hardware
+        bool updateStatus();
 
        /***************************************************************************************************
         * SINGLETON MANAGEMENT
         ***************************************************************************************************/
         // Create the singleton instance
         static void create();
-
-    private:
-        // constructor
-        explicit CameraControl();
-
-        // destructor (needs to be virtual)
-        virtual ~CameraControl();
-
-        // execute a not blocking connect
-        bool not_blocking_connect(struct sockaddr_in & in_out_sa, int sock, int timeout);
 
     protected:
         // send a tcp/ip packet
@@ -152,6 +156,28 @@ class CameraControl : public CameraSingleton<CameraControl>
                             const std::vector<uint8_t> & in_net_buffer,
                             int32_t                    & out_error    );
 
+       /**************************************************************************************************
+        * COMMANDS MANAGEMENT
+        **************************************************************************************************/
+        // Send a command to the detector and wait for the acknowledge
+        bool sendCommandWithAck(NetCommandHeader * in_out_command, int32_t & out_error);
+
+    private:
+        // constructor
+        explicit CameraControl();
+
+        // destructor (needs to be virtual)
+        virtual ~CameraControl();
+
+        // execute a not blocking connect
+        bool notBlockingConnect(struct sockaddr_in & in_out_sa, int sock, int timeout);
+
+        // Cut a substring with a position and delimiter
+        static bool getSubString(const std::string & in_string     ,
+                                 std::size_t         in_pos        ,
+                                 const std::string & in_delimiter  ,
+                                 std::string       & out_sub_string);
+
     private:
         // socket for commands and answers
         int m_sock;
@@ -167,9 +193,12 @@ class CameraControl : public CameraSingleton<CameraControl>
 
         // camera identifier (starts at 1)
         int m_camera_identifier;
+
+        // latest detector status (periodically updated)
+        DetectorStatus m_latest_status;
 };
 
-} // namespace SpectralDetector_ns
+} // namespace Spectral
 } // namespace lima
 
 #endif // SPECTRALCAMERACONTROL_H

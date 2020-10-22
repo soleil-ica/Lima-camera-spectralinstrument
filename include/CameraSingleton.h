@@ -34,18 +34,15 @@
 #include <stdint.h>
 #include <cstdlib>
 
-// LIMA
-#include "lima/AutoObj.h"
-
 /*
  *  \namespace lima
  */
 namespace lima
 {
 /*
- *  \namespace SpectralDetector_ns
+ *  \namespace Spectral
  */
-namespace SpectralDetector_ns
+namespace Spectral
 {
 /*
  *  \class CameraSingleton
@@ -55,14 +52,17 @@ namespace SpectralDetector_ns
     class CameraSingleton
     {
     public:
+        // init the singleton
+        static void init(Elem * in_new);
+
         // release the singleton
         static void release();
 
         // return the singleton
-        static lima::AutoPtr<Elem> getInstance();
+        static Elem * getInstance();
 
         // return the singleton (const version)
-        static lima::AutoPtr<const Elem> getConstInstance();
+        static const Elem * getConstInstance();
 
     protected:
         // constructor
@@ -77,13 +77,13 @@ namespace SpectralDetector_ns
 
     protected:
         // used to store the singleton
-        static lima::AutoPtr<Elem> g_singleton;
+        static Elem * g_singleton;
     };
 
     // include the implementation file of the CameraSingleton class to separate interface and implementation
     #include "CameraSingleton.hpp"
 
-} // namespace SpectralDetector_ns
+} // namespace Spectral
 } // namespace lima
 
 #endif //// SPECTRALSINGLETON_H_

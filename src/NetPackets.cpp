@@ -37,7 +37,7 @@
 #include "lima/Debug.h"
 
 using namespace lima;
-using namespace lima::SpectralDetector_ns;
+using namespace lima::Spectral;
 
 //===================================================================================================
 static uint64_t htonll(uint64_t in_value);
@@ -464,6 +464,32 @@ bool NetGenericHeader::totalWrite(uint8_t * & in_out_memory_data, std::size_t & 
     return NetGenericHeader::write(in_out_memory_data, in_out_memory_size);
 }
 
+/****************************************************************************************************
+ * \fn void log() const
+ * \brief  log the class content
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void NetGenericHeader::log() const
+{
+    std::cout << "-- NetGenericHeader content --" << std::endl;
+    std::cout << "m_packet_name: " << m_packet_name << std::endl;
+    std::cout << "m_packet_lenght: " << (int)m_packet_lenght << std::endl;
+    std::cout << "m_packet_identifier: " << (int)m_packet_identifier << std::endl;
+    std::cout << "m_camera_identifier: " << (int)m_camera_identifier << std::endl;
+}
+
+/****************************************************************************************************
+ * \fn void totalLog() const
+ * \brief  totally log the classes content (recursive)
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void NetGenericHeader::totalLog() const
+{
+    NetGenericHeader::log();
+}
+
 //===================================================================================================
 // Class NetCommandHeader
 //===================================================================================================
@@ -481,6 +507,7 @@ NetCommandHeader::NetCommandHeader()
     m_specific_data_lenght = 0   ; // length of parameter block following (0, if none)
     m_is_server_command    = true; // some commands are server related, others to a camera
     m_packet_name          = "NetCommandHeader";
+    m_packet_identifier    = NetGenericHeader::g_packet_identifier_for_command; 
 }
 
 /****************************************************************************************************
@@ -609,6 +636,32 @@ bool NetCommandHeader::totalWrite(uint8_t * & in_out_memory_data, std::size_t & 
     return NetCommandHeader::write(in_out_memory_data, in_out_memory_size);
 }
 
+/****************************************************************************************************
+ * \fn void log() const
+ * \brief  log the class content
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void NetCommandHeader::log() const
+{
+    std::cout << "-- NetCommandHeader content --" << std::endl;
+    std::cout << "m_function_number: " << (int)m_function_number << std::endl;
+    std::cout << "m_specific_data_lenght: " << (int)m_specific_data_lenght << std::endl;
+    std::cout << "m_camera_identifier: " << (int)m_camera_identifier << std::endl;
+}
+
+/****************************************************************************************************
+ * \fn void totalLog() const
+ * \brief  totally log the classes content (recursive)
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void NetCommandHeader::totalLog() const
+{
+    NetGenericHeader::totalLog();
+    NetCommandHeader::log();
+}
+
 //===================================================================================================
 // Class NetCommandGetStatus
 //===================================================================================================
@@ -730,6 +783,41 @@ bool NetAcknowledge::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in
     return NetAcknowledge::write(in_out_memory_data, in_out_memory_size);
 }
 
+/****************************************************************************************************
+ * \fn bool wasAccepted() const
+ * \brief  check if the command was accepted
+ * \param  none
+ * \return true if accepted else false
+ ****************************************************************************************************/
+bool NetAcknowledge::wasAccepted() const
+{
+    return (m_accepted_flag != 0);
+}
+
+/****************************************************************************************************
+ * \fn void log() const
+ * \brief  log the class content
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void NetAcknowledge::log() const
+{
+    std::cout << "-- NetAcknowledge content --" << std::endl;
+    std::cout << "m_accepted_flag: " << (int)m_accepted_flag << std::endl;
+}
+
+/****************************************************************************************************
+ * \fn void totalLog() const
+ * \brief  totally log the classes content (recursive)
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void NetAcknowledge::totalLog() const
+{
+    NetGenericHeader::totalLog();
+    NetAcknowledge::log();
+}
+
 //===================================================================================================
 // Class NetGenericAnswer
 //===================================================================================================
@@ -845,9 +933,39 @@ bool NetGenericAnswer::totalWrite(uint8_t * & in_out_memory_data, std::size_t & 
     return NetGenericAnswer::write(in_out_memory_data, in_out_memory_size);
 }
 
+/****************************************************************************************************
+ * \fn void log() const
+ * \brief  log the class content
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void NetGenericAnswer::log() const
+{
+    std::cout << "-- NetGenericAnswer content --" << std::endl;
+    std::cout << "m_error_code: " << (int)m_error_code << std::endl;
+    std::cout << "m_data_type: " << (int)m_data_type << std::endl;
+    std::cout << "m_specific_data_lenght: " << (int)m_specific_data_lenght << std::endl;
+}
+
+/****************************************************************************************************
+ * \fn void totalLog() const
+ * \brief  totally log the classes content (recursive)
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void NetGenericAnswer::totalLog() const
+{
+    NetGenericHeader::totalLog();
+    NetGenericAnswer::log();
+}
+
 //===================================================================================================
 // Class NetAnswerGetStatus
 //===================================================================================================
+std::string NetAnswerGetStatus::g_server_flags_status_name    = "Server Flags";
+std::string NetAnswerGetStatus::g_server_flags_delimiter      = ",";
+std::size_t NetAnswerGetStatus::g_server_flags_value_position = 1; // starts at 0
+
 /****************************************************************************************************
  * \fn NetAnswerGetStatus()
  * \brief  constructor
@@ -952,6 +1070,30 @@ bool NetAnswerGetStatus::totalWrite(uint8_t * & in_out_memory_data, std::size_t 
         return false;
 
     return NetAnswerGetStatus::write(in_out_memory_data, in_out_memory_size);
+}
+
+/****************************************************************************************************
+ * \fn void log() const
+ * \brief  log the class content
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void NetAnswerGetStatus::log() const
+{
+    std::cout << "-- NetAnswerGetStatus content --" << std::endl;
+    std::cout << "m_status: " << m_status << std::endl;
+}
+
+/****************************************************************************************************
+ * \fn void totalLog() const
+ * \brief  totally log the classes content (recursive)
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void NetAnswerGetStatus::totalLog() const
+{
+    NetGenericAnswer::totalLog();
+    NetAnswerGetStatus::log();
 }
 
 //###########################################################################

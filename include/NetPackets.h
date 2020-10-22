@@ -44,9 +44,9 @@
 namespace lima
 {
 /*
- *  \namespace SpectralDetector_ns
+ *  \namespace Spectral
  */
-namespace SpectralDetector_ns 
+namespace Spectral 
 {
 /*
  *  \class NetGenericHeader
@@ -84,6 +84,9 @@ public:
     // write the class members values into a memory block
     virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
 
+    // log the class content
+    virtual void log() const;
+
     //-----------------------
     // recursive methods
     //-----------------------
@@ -95,6 +98,9 @@ public:
 
     // totally write the class members values into a memory block
     virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
 
     //-----------------------
     // template methods
@@ -209,6 +215,9 @@ public:
     // write the class members values into a memory block
     virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
 
+    // log the class content
+    virtual void log() const;
+
     //-----------------------
     // recursive methods
     //-----------------------
@@ -220,6 +229,9 @@ public:
 
     // totally write the class members values into a memory block
     virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
 
 protected:
     uint16_t m_function_number     ; // function to be executed (1000 .. 1999)
@@ -256,6 +268,9 @@ public:
     // constructor
     NetAcknowledge();
 
+    // check if the command was accepted
+    bool wasAccepted() const;
+
     //-----------------------
     // not recursive methods
     //-----------------------
@@ -268,6 +283,9 @@ public:
     // write the class members values into a memory block
     virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
 
+    // log the class content
+    virtual void log() const;
+
     //-----------------------
     // recursive methods
     //-----------------------
@@ -279,6 +297,9 @@ public:
 
     // totally write the class members values into a memory block
     virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
 
 protected:
     uint16_t m_accepted_flag; // true (!0) or false (0)
@@ -308,6 +329,9 @@ public:
     // write the class members values into a memory block
     virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
 
+    // log the class content
+    virtual void log() const;
+
     //-----------------------
     // recursive methods
     //-----------------------
@@ -319,6 +343,9 @@ public:
 
     // totally write the class members values into a memory block
     virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
 
 protected:
     int32_t  m_error_code          ; // 0 = no error
@@ -336,6 +363,20 @@ class NetAnswerGetStatus : public NetGenericAnswer
 {
     friend class CameraControl;    
 
+    // hardware status values
+    typedef enum HardwareStatus
+    {
+        CameraConnected        = 1  ,
+        AcquisitionInProgress  = 2  ,
+        WaitForTrigger         = 4  ,
+        TriggerReceived        = 8  ,
+        ServerSimulatorData    = 16 ,
+        InterfaceSimulatorData = 32 ,
+        ConfigurationLoaded    = 64 ,
+        ConfigurationError     = 128,
+
+    } HardwareStatus;
+
     // constructor
     NetAnswerGetStatus();
 
@@ -351,6 +392,9 @@ class NetAnswerGetStatus : public NetGenericAnswer
     // write the class members values into a memory block
     virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
 
+    // log the class content
+    virtual void log() const;
+
     //-----------------------
     // recursive methods
     //-----------------------
@@ -363,11 +407,23 @@ class NetAnswerGetStatus : public NetGenericAnswer
     // totally write the class members values into a memory block
     virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
 
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
 protected:
     std::string m_status;
+
+    // status name of the key to read in the complete status string returned by the detector
+    static std::string g_server_flags_status_name;
+
+    // delimiter used in a key status (name,value,unity)
+    static std::string g_server_flags_delimiter;
+
+    // position of a value in a key status (name,value,unity)
+    static std::size_t g_server_flags_value_position;
 };
 
-} // namespace SpectralDetector_ns
+} // namespace Spectral
 } // namespace lima
 
 #endif // SPECTRALNETPACKET_H

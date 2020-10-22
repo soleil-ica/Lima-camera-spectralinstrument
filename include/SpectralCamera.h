@@ -50,6 +50,7 @@ namespace lima
 {
 namespace Spectral
 {
+    // pre-defines the BufferCtrlObj class
     class BufferCtrlObj;
 
 /*******************************************************************
@@ -63,7 +64,7 @@ namespace Spectral
     //-----------------------------------------------------------------------------
 	public:
         // status values
-        enum Status
+        typedef enum Status
         {
             Init       , // starting the plugin
             Ready      , // ready to start acquisition
@@ -71,7 +72,8 @@ namespace Spectral
             Readout    , // running a readout
             Latency    , // running a latency
             Fault      , // acquisition stopped externally or unexpected error 
-        } ;
+
+        } Status;
 
 	//-----------------------------------------------------------------------------
 	public:
@@ -89,6 +91,7 @@ namespace Spectral
         void prepareAcq();
         void startAcq();
         void stopAcq();
+
 	    Camera::Status getStatus();
         int  getNbHwAcquiredFrames();
 
