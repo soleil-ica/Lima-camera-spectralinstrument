@@ -70,6 +70,7 @@ Camera::Camera(const std::string & connection_address          ,
     DEB_CONSTRUCTOR();
 
     const int connection_timeout_sec = 2; // 2 seconds - TODO - property or move the constant in the class
+    const int selection_timeout_sec  = 2; // 2 seconds - TODO - property or move the constant in the class
     const int camera_identifier      = 1; // TODO? - property or move the constant in the class
 
     m_connection_address           = connection_address          ;
@@ -85,6 +86,7 @@ Camera::Camera(const std::string & connection_address          ,
 
     // starting the tcp/ip connection
     CameraControl::getInstance()->setConnectionTimeout(connection_timeout_sec);
+    CameraControl::getInstance()->setReceptionTimeout (selection_timeout_sec );
     CameraControl::getInstance()->setCameraIdentifier (camera_identifier     );
 
     CameraControl::getInstance()->connect(m_connection_address, m_connection_port);

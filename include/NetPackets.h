@@ -26,8 +26,8 @@
  * \date   Created on October 20, 2020
  ****************************************************************************************************/
 
-#ifndef SPECTRALNETPACKET_H
-#define SPECTRALNETPACKET_H
+#ifndef SPECTRALNETPACKETS_H
+#define SPECTRALNETPACKETS_H
 
 // SYSTEM
 #include <cstdlib>
@@ -54,7 +54,8 @@ namespace Spectral
  */
 class NetGenericHeader
 {
-    friend class CameraControl;    
+    friend class CameraControl   ;
+    friend class NetPacketsGroups;
 
 public:
     // constructor
@@ -188,7 +189,7 @@ template <> void NetGenericHeader::writeData<double>(uint8_t * & in_out_memory_d
  */
 class NetCommandHeader : public NetGenericHeader
 {
-    friend class CameraControl;    
+    friend class CameraControl;
 
 public:
     // constructor
@@ -262,7 +263,8 @@ protected:
  */
 class NetAcknowledge : public NetGenericHeader
 {
-    friend class CameraControl;    
+    friend class CameraControl   ;
+    friend class NetPacketsGroups;
 
 public:
     // constructor
@@ -311,7 +313,8 @@ protected:
  */
 class NetGenericAnswer : public NetGenericHeader
 {
-    friend class CameraControl;    
+    friend class CameraControl   ;
+    friend class NetPacketsGroups;
 
 public:
     // constructor
@@ -426,4 +429,4 @@ protected:
 } // namespace Spectral
 } // namespace lima
 
-#endif // SPECTRALNETPACKET_H
+#endif // SPECTRALNETPACKETS_H

@@ -29,6 +29,7 @@
 // PROJECT
 #include "CameraReceiveDataThread.h"
 #include "SpectralCamera.h"
+#include "CameraControl.h"
 
 // SYSTEM
 #include <stdio.h>
@@ -162,7 +163,14 @@ void CameraReceiveDataThread::execStartReception()
     // the loop can also end if all the frames wre acquired
     while(!m_force_stop)
     {
-        lima::Sleep(1); // sleep the thread in seconds
+        int32_t            error;
+        NetGenericHeader * packet = NULL ;
+
+        // wait for an acknowledge
+        if(CameraControl::getInstance()->receivePacket(packet, error))
+        {
+            CameraControl::getInstance()->addPacket(packet);
+        }
     }
 
 /*

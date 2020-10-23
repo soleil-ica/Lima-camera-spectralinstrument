@@ -54,6 +54,8 @@
 #include "SpectralCompatibility.h"
 #include "CameraSingleton.h"
 #include "NetPackets.h"
+#include "ProtectedList.h"
+#include "NetPacketsGroups.h"
 
 // LIMA 
 #include "lima/Debug.h"
@@ -95,6 +97,9 @@ class CameraControl : public CameraSingleton<CameraControl>
         // configure the connection timeout in seconds
         void setConnectionTimeout(int in_connection_timeout_sec);
 
+        // configure the reception timeout in seconds
+        void setReceptionTimeout(int in_reception_timeout_sec);
+
         // configure the camera identifier
         void setCameraIdentifier(int in_camera_identifier);
 
@@ -112,6 +117,18 @@ class CameraControl : public CameraSingleton<CameraControl>
 
         // Receive a SI Image SGL II packet
         bool receivePacket(NetGenericHeader * & out_packet, int32_t & out_error);
+
+        // Add a new packet to the packets container (the instance will be freed by the container or a consumer)
+        void addPacket(NetGenericHeader * in_packet);
+
+        // Wait for a new ack packet to be received
+        bool waitAcknowledgePacket(NetGenericHeader * & out_packet);
+
+        // Wait for a new image packet to be received
+        bool waitImagePacket(NetGenericHeader * & out_packet);
+
+        // Wait for a new data packet to be received
+        bool waitDataPacket(uint16_t in_data_type, NetGenericHeader * & out_packet);
 
        /**************************************************************************************************
         * COMMANDS MANAGEMENT
@@ -178,6 +195,9 @@ class CameraControl : public CameraSingleton<CameraControl>
                                  const std::string & in_delimiter  ,
                                  std::string       & out_sub_string);
 
+        // Wait for a new packet to be received
+        bool waitPacket(NetPacketsGroupId in_group_id, NetGenericHeader * & out_packet);
+
     private:
         // socket for commands and answers
         int m_sock;
@@ -191,11 +211,17 @@ class CameraControl : public CameraSingleton<CameraControl>
         // connection timeout in seconds
         int m_connection_timeout_sec;
 
+        // reception timeout in seconds
+        int m_reception_timeout_sec;
+
         // camera identifier (starts at 1)
         int m_camera_identifier;
 
         // latest detector status (periodically updated)
         DetectorStatus m_latest_status;
+
+        // packets container
+        NetPacketsGroups m_packets_container;
 };
 
 } // namespace Spectral

@@ -64,8 +64,9 @@ CameraControl::CameraControl()
     DEB_CONSTRUCTOR();
 
     m_connection_timeout_sec = 0;
-    m_is_connected = false;
-    m_latest_status = DetectorStatus::Ready;
+    m_reception_timeout_sec  = 0;
+    m_is_connected           = false;
+    m_latest_status          = DetectorStatus::Ready;
 
 	// Ignore the sigpipe we get we try to send quit to
 	// dead server in disconnect, just use error codes
@@ -104,6 +105,17 @@ CameraControl::~CameraControl()
 void CameraControl::setConnectionTimeout(int in_connection_timeout_sec)
 {
     m_connection_timeout_sec = in_connection_timeout_sec;
+}
+
+/****************************************************************************************************
+ * \fn void setReceptionTimeout(int in_reception_timeout_sec)
+ * \brief  configure the reception timeout in seconds
+ * \param  in_reception_timeout_sec new reception timeout in seconds
+ * \return none
+ ****************************************************************************************************/
+void CameraControl::setReceptionTimeout(int in_reception_timeout_sec)
+{
+    m_reception_timeout_sec = in_reception_timeout_sec;
 }
 
 /****************************************************************************************************
@@ -314,22 +326,33 @@ void CameraControl::connect(const std::string & in_hostname, int in_port)
         DEB_ERROR() << MsgErr;
         THROW_HW_ERROR(Error) << MsgErr;
     } 
-    else 
-    {
-	    int opt = 1;
-	
-        if (setsockopt(m_sock, protocol->p_proto, TCP_NODELAY, (char *) &opt, 4) < 0) 
-        {
-            endprotoent();
 
-            std::ostringstream MsgErr;
-            MsgErr << "Can't set socket options";
-            DEB_ERROR() << MsgErr;
-            THROW_HW_ERROR(Error) << MsgErr;
-	    }
+    int opt = 1;
+
+    if (setsockopt(m_sock, protocol->p_proto, TCP_NODELAY, (void *) &opt, sizeof(opt)) < 0) 
+    {
+        endprotoent();
+
+        std::ostringstream MsgErr;
+        MsgErr << "Can't set socket options";
+        DEB_ERROR() << MsgErr;
+        THROW_HW_ERROR(Error) << MsgErr;
     }
 
     endprotoent();
+
+    // set the select timeout
+    struct timeval time_out;
+    time_out.tv_sec  = m_reception_timeout_sec;
+    time_out.tv_usec = 0;
+    
+    if(setsockopt(m_sock, SOL_SOCKET, SO_RCVTIMEO, &time_out, sizeof(time_out)) < 0)
+    {
+        std::ostringstream MsgErr;
+        MsgErr << "Can't set timeout socket options";
+        DEB_ERROR() << MsgErr;
+        THROW_HW_ERROR(Error) << MsgErr;
+    }
 
     DEB_TRACE() << "Connected to server: " << in_hostname << ":" << in_port;
 
@@ -469,8 +492,16 @@ bool CameraControl::receive(uint8_t * out_buffer, const int in_buffer_lenght, in
         // Server returned error code ?
         if (n <= 0)
         {
-            DEB_ERROR() << "CameraControl::receive(): Could not receive answer.";
-            out_error = 1;
+            if(errno == EAGAIN)
+            {      
+                DEB_WARNING() << "CameraControl::receive(): TIMEOUT occured!";
+            }
+            else
+            {
+                DEB_ERROR() << "CameraControl::receive(): Could not receive answer.";
+            }
+
+            out_error = errno;
             return false;
         }
 
@@ -608,7 +639,7 @@ bool CameraControl::FillFullPacket(NetGenericHeader           * out_packet   ,
 
     if(!out_packet->totalRead(memory_data, memory_size))
     {
-        DEB_ERROR() << "CameraControl::receivePacket - Error during the buffer copy into the "
+        DEB_ERROR() << "CameraControl::FillFullPacket - Error during the buffer copy into the "
                     << out_packet->m_packet_name << " packet!";
         out_error = 1;
         result = false;
@@ -748,6 +779,114 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
     return true;
 }
 
+/****************************************************************************************************
+ * \fn void addPacket(NetGenericHeader * in_packet)
+ * \brief  Add a new packet to the packets container (the instance will be freed by the container or a consumer)
+ * \param  in_packet new packet
+ * \return none
+ ****************************************************************************************************/
+void CameraControl::addPacket(NetGenericHeader * in_packet)
+{
+    DEB_MEMBER_FUNCT();
+
+    NetPacketsGroupId group_id;
+
+    // check if this is an acknowledge or an image packet 
+    if(in_packet->isAcknowledgePacket() || in_packet->isImagePacket())
+    {
+        group_id = static_cast<NetPacketsGroupId>(in_packet->m_packet_identifier);
+    }
+    // check if this is a data packet
+    else
+    if(in_packet->isDataPacket())
+    {
+        NetGenericAnswer * packet = dynamic_cast<NetGenericAnswer *>(in_packet);
+        group_id = packet->m_data_type;
+    }
+    else
+    {
+        DEB_ERROR() << "CameraControl::addPacket - Incoherent packet type!";
+        return;
+    }
+
+    // search the group
+    ProtectedList<NetGenericHeader> * group = m_packets_container.searchGroup(group_id);
+
+    if(group == NULL)
+    {
+        DEB_ERROR() << "CameraControl::addPacket - The group " << (int)group_id << " is not managed!";
+        return;
+    }
+
+    group->put(in_packet);
+}
+
+/****************************************************************************************************
+ * \fn bool waitPacket(NetPacketsGroupId in_group_id, NetGenericHeader * & out_packet)
+ * \brief  Wait for a new packet to be received
+ * \param  in_group_id type of packet
+ * \param  out_packet  received packet
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::waitPacket(NetPacketsGroupId in_group_id, NetGenericHeader * & out_packet)
+{
+    DEB_MEMBER_FUNCT();
+
+    out_packet = NULL;
+
+    // search the group
+    ProtectedList<NetGenericHeader> * group = m_packets_container.searchGroup(in_group_id);
+
+    if(group == NULL)
+    {
+        DEB_ERROR() << "CameraControl::waitPacket - The group " << (int)in_group_id << " is not managed!";
+        return false;
+    }
+
+    group->waiting_while_empty();
+
+    if(!group->empty())
+    {
+        out_packet = group->take();
+    }
+
+    return (out_packet != NULL);
+}
+
+/****************************************************************************************************
+ * \fn bool waitAcknowledgePacket(NetGenericHeader * & out_packet)
+ * \brief  Wait for a new ack packet to be received
+ * \param  out_packet  received packet
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::waitAcknowledgePacket(NetGenericHeader * & out_packet)
+{
+    return waitPacket(static_cast<NetPacketsGroupId>(NetGenericHeader::g_packet_identifier_for_acknowledge), out_packet);
+}
+
+/****************************************************************************************************
+ * \fn bool waitImagePacket(NetGenericHeader * & out_packet)
+ * \brief  Wait for a new image packet to be received
+ * \param  out_packet  received packet
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::waitImagePacket(NetGenericHeader * & out_packet)
+{
+    return waitPacket(static_cast<NetPacketsGroupId>(NetGenericHeader::g_packet_identifier_for_image), out_packet);
+}
+
+/****************************************************************************************************
+ * \fn bool waitDataPacket(NetGenericHeader * & out_packet)
+ * \brief  Wait for a new data packet to be received
+ * \param  in_data_type data type
+ * \param  out_packet   received packet
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::waitDataPacket(uint16_t in_data_type, NetGenericHeader * & out_packet)
+{
+    return waitPacket(in_data_type, out_packet);
+}
+
 /**************************************************************************************************
  * COMMANDS MANAGEMENT
  **************************************************************************************************/
@@ -771,11 +910,7 @@ bool CameraControl::sendCommandWithAck(NetCommandHeader * in_out_command, int32_
         goto done;
 
     // wait for an acknowledge
-    if(!receivePacket(first_packet, out_error))
-        goto done;
-
-    // check if this is a acknowledge packet
-    if(!first_packet->isAcknowledgePacket())
+    if(!waitAcknowledgePacket(first_packet))
         goto done;
 
     ack_packet = dynamic_cast<NetAcknowledge *>(first_packet);
@@ -853,7 +988,6 @@ bool CameraControl::updateStatus()
     int32_t            error         = 0    ;
     bool               result        = false;
     NetGenericHeader * second_packet = NULL ;
-    NetGenericAnswer * answer_packet = NULL ;
     NetCommandHeader * command       = new NetCommandGetStatus();
 
     // send the command and treat the acknowledge
@@ -861,20 +995,13 @@ bool CameraControl::updateStatus()
         goto done;
 
     // wait for the status
-    if(!receivePacket(second_packet, error))
+    if(!waitDataPacket(NetGenericAnswer::g_data_type_get_status, second_packet))
         goto done;
 
-    // check if this is a data packet
-    if(!second_packet->isDataPacket())
-        goto done;
-
-    answer_packet = dynamic_cast<NetGenericAnswer *>(second_packet);
-
-    if(answer_packet->m_data_type == NetGenericAnswer::g_data_type_get_status)
+    // we need to manage the status data 
     {
-        NetAnswerGetStatus * status_packet = dynamic_cast<NetAnswerGetStatus *>(answer_packet);
+        NetAnswerGetStatus * status_packet = dynamic_cast<NetAnswerGetStatus *>(second_packet);
 
-        // we need to retrieve the status data 
         int status_value;
 
         std::string line   ;
@@ -929,7 +1056,7 @@ bool CameraControl::updateStatus()
                     result          = true      ;
                     break;
                 }
-            }        
+            }
         }
     }
 
