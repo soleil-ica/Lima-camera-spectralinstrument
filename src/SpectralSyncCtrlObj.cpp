@@ -67,7 +67,6 @@ void SyncCtrlObj::setTrigMode(TrigMode trig_mode)
 //-----------------------------------------------------
 void SyncCtrlObj::getTrigMode(TrigMode& trig_mode)
 {
-    DEB_MEMBER_FUNCT();    
     m_cam.getTrigMode(trig_mode);
 }
 
@@ -76,8 +75,9 @@ void SyncCtrlObj::getTrigMode(TrigMode& trig_mode)
 //-----------------------------------------------------
 void SyncCtrlObj::setExpTime(double exp_time)
 {
-    DEB_MEMBER_FUNCT();    
-    m_cam.setExpTime(exp_time);
+    // lima exposure time is in seconds (but shows in ms)
+    // camera exposure time is in milli-seconds
+    m_cam.setExpTime(static_cast<uint32_t>(exp_time * 1000.0));
 }
 
 //-----------------------------------------------------
@@ -86,7 +86,12 @@ void SyncCtrlObj::setExpTime(double exp_time)
 void SyncCtrlObj::getExpTime(double& exp_time)
 {
     DEB_MEMBER_FUNCT();    
-    m_cam.getExpTime(exp_time);
+
+    // lima exposure time is in seconds (but shows in ms)
+    // camera exposure time is in milli-seconds
+    uint32_t temp;
+    m_cam.getExpTime(temp);
+    exp_time = static_cast<double>(temp) / 1000.0;
 }
 
 //-----------------------------------------------------
@@ -94,7 +99,9 @@ void SyncCtrlObj::getExpTime(double& exp_time)
 //-----------------------------------------------------
 void SyncCtrlObj::setLatTime(double lat_time)
 {
-    m_cam.setLatTime(lat_time);
+    // lima latency time is in seconds (but shows in ms)
+    // simulated camera latency time is in milli-seconds
+    m_cam.setLatTime(static_cast<uint32_t>(lat_time * 1000.0));
 }
 
 //-----------------------------------------------------
@@ -102,8 +109,11 @@ void SyncCtrlObj::setLatTime(double lat_time)
 //-----------------------------------------------------
 void SyncCtrlObj::getLatTime(double& lat_time)
 {
-    DEB_MEMBER_FUNCT();    
-    m_cam.getLatTime(lat_time);
+    // lima latency time is in seconds (but shows in ms)
+    // simulated camera latency time is in milli-seconds
+    uint32_t temp;
+    m_cam.getLatTime(temp);
+    lat_time = static_cast<double>(temp) / 1000.0;
 }
 
 //-----------------------------------------------------
@@ -130,13 +140,14 @@ void SyncCtrlObj::getNbHwFrames(int& nb_frames)
 void SyncCtrlObj::getValidRanges(ValidRangesType& valid_ranges)
 {
     DEB_MEMBER_FUNCT();
-    double min_time;
-    double max_time;
+    uint32_t min_time;
+    uint32_t max_time;
+
     m_cam.getExposureTimeRange(min_time, max_time);
-    valid_ranges.min_exp_time = min_time;
-    valid_ranges.max_exp_time = max_time;
+    valid_ranges.min_exp_time = static_cast<double>(min_time) / 1000.0;
+    valid_ranges.max_exp_time = static_cast<double>(max_time) / 1000.0;
 
     m_cam.getLatTimeRange(min_time, max_time);
-    valid_ranges.min_lat_time = min_time;
-    valid_ranges.max_lat_time = max_time;
+    valid_ranges.min_lat_time = static_cast<double>(min_time) / 1000.0;
+    valid_ranges.max_lat_time = static_cast<double>(max_time) / 1000.0;
 }

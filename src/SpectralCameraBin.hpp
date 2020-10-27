@@ -43,7 +43,10 @@ void Camera::setBin(const Bin & set_bin) ///< [in] binning values objects
 {
     DEB_MEMBER_FUNCT();
     DEB_PARAM() << DEB_VAR1(set_bin);
-    
+
+    // Change the roi by sending a command to the hardware
+    CameraControl::getInstance()->setBinning(set_bin.getX(), set_bin.getY());
+
     DEB_RETURN() << DEB_VAR1(set_bin);
 }
 

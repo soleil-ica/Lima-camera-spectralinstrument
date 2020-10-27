@@ -75,6 +75,8 @@ typedef std::map<NetPacketsGroupId, ProtectedList<NetGenericHeader> *> NetPacket
  */
 class NetPacketsGroups
 {
+    friend class CameraControl;
+
 public:
     // constructor
     NetPacketsGroups();
@@ -84,6 +86,9 @@ public:
 
     // search a group
     ProtectedList<NetGenericHeader> * searchGroup(NetPacketsGroupId in_group_id);
+
+    // set the timeout delay in seconds for all the groups
+    void setDelayBeforeTimeoutSec(int in_wait_packet_timeout_sec);
 
 private:
     // add a new group 

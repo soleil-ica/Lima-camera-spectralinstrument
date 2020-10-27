@@ -111,21 +111,21 @@ namespace Spectral
 
         //-- Synch control object
         void setTrigMode(TrigMode mode);
-        void getTrigMode(TrigMode& mode);
-        bool checkTrigMode(TrigMode mode);
+        void getTrigMode(TrigMode& mode) const;
+        bool checkTrigMode(TrigMode mode) const;
 
-        void setExpTime(double exp_time);
-        void getExpTime(double& exp_time);
+        void setExpTime(uint32_t   exp_time_ms);
+        void getExpTime(uint32_t & exp_time_ms) const;
 
-        void setLatTime(double lat_time);
-        void getLatTime(double& lat_time);
+        void setLatTime(uint32_t   lat_time_ms);
+        void getLatTime(uint32_t & lat_time_ms) const;
 
-        void getExposureTimeRange(double& min_expo, double& max_expo) const;
-        void getLatTimeRange(double& min_lat, double& max_lat) const;
+        void getExposureTimeRange(uint32_t & min_expo_ms, uint32_t & max_expo_ms) const;
+        void getLatTimeRange     (uint32_t & min_lat_ms , uint32_t & max_lat_ms ) const;
 
-        void setNbFrames(int nb_frames);
-        void getNbFrames(int& nb_frames);
-	    void getNbHwAcquiredFrames(int &nb_acq_frames);
+        void setNbFrames(int   nb_frames);
+        void getNbFrames(int & nb_frames) const;
+	    void getNbHwAcquiredFrames(int &nb_acq_frames) const;
 
 	    void checkRoi(const Roi& set_roi, Roi& hw_roi);
 	    void setRoi(const Roi& set_roi);
@@ -189,6 +189,15 @@ namespace Spectral
 
         // delay between the data update (status, exposure time, etc...) in msec
         int m_data_update_delay_msec;
+
+        // simulated number of frames to acquire
+        int m_nb_frames_to_acquire;
+
+        // latency time in milli-seconds
+        uint32_t m_latency_time_msec; 
+
+        // current trigger mode
+        lima::TrigMode m_trigger_mode;
 
 		//-----------------------------------------------------------------------------
         // Constants

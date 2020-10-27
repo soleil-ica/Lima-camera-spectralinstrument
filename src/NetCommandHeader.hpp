@@ -23,9 +23,14 @@
 //===================================================================================================
 // Class NetCommandHeader
 //===================================================================================================
-uint16_t NetCommandHeader::g_function_number_get_status            = 1011;
-uint16_t NetCommandHeader::g_function_number_get_camera_parameters = 1048;
-uint16_t NetCommandHeader::g_function_number_get_settings          = 1041;
+const uint16_t NetCommandHeader::g_function_number_get_status            = 1011;
+const uint16_t NetCommandHeader::g_function_number_get_camera_parameters = 1048;
+const uint16_t NetCommandHeader::g_function_number_get_settings          = 1041;
+
+const uint16_t NetCommandHeader::g_function_number_set_acquisition_mode  = 1034;
+const uint16_t NetCommandHeader::g_function_number_set_exposure_time     = 1035;
+const uint16_t NetCommandHeader::g_function_number_set_format_parameters = 1043;
+const uint16_t NetCommandHeader::g_function_number_set_acquisition_type  = 1036;
 
 /****************************************************************************************************
  * \fn NetCommandHeader()

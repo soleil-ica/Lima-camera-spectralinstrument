@@ -122,11 +122,11 @@ protected:
     uint8_t  m_packet_identifier; 
     uint8_t  m_camera_identifier; // 0 for server commands, Camera number (1..max)
 
-    static uint8_t  g_server_command_identifier        ; // to set Camera identifier
-    static uint8_t  g_packet_identifier_for_command    ; // to set Packet identifier
-    static uint8_t  g_packet_identifier_for_acknowledge; // to set Packet identifier
-    static uint8_t  g_packet_identifier_for_data       ; // to set Packet identifier
-    static uint8_t  g_packet_identifier_for_image      ; // to set Packet identifier
+    static const uint8_t g_server_command_identifier        ; // to set Camera identifier
+    static const uint8_t g_packet_identifier_for_command    ; // to set Packet identifier
+    static const uint8_t g_packet_identifier_for_acknowledge; // to set Packet identifier
+    static const uint8_t g_packet_identifier_for_data       ; // to set Packet identifier
+    static const uint8_t g_packet_identifier_for_image      ; // to set Packet identifier
 };
 
 //------------------------------------------------------------
@@ -190,6 +190,7 @@ template <> void NetGenericHeader::writeData<double>(uint8_t * & in_out_memory_d
 class NetCommandHeader : public NetGenericHeader
 {
     friend class CameraControl;
+    friend class NetPacketsGroups;
 
 public:
     // constructor
@@ -239,9 +240,14 @@ protected:
     uint16_t m_specific_data_lenght; // length of parameter block following (0, if none)
     bool     m_is_server_command   ; // some commands are server related, others to a camera (used to set the m_camera_identifier member)
 
-    static uint16_t g_function_number_get_status           ; // to set Function number
-    static uint16_t g_function_number_get_camera_parameters; // to set Function number
-    static uint16_t g_function_number_get_settings         ; // to set Function number
+    static const uint16_t g_function_number_get_status           ; // to set Function number
+    static const uint16_t g_function_number_get_camera_parameters; // to set Function number
+    static const uint16_t g_function_number_get_settings         ; // to set Function number
+
+    static const uint16_t g_function_number_set_acquisition_mode ;
+    static const uint16_t g_function_number_set_exposure_time    ;
+    static const uint16_t g_function_number_set_format_parameters;
+    static const uint16_t g_function_number_set_acquisition_type ;
 };
 
 /*
@@ -287,6 +293,195 @@ public:
     NetCommandGetSettings();
 
 protected:
+};
+
+/*
+ *  \class NetCommandSetAcquisitionMode
+ *  \brief This class is a Set Acquisition Mode packet class
+ */
+class NetCommandSetAcquisitionMode : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetCommandSetAcquisitionMode();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // get the specific packet size
+    virtual std::size_t size() const;
+
+    // read the values stored into a memory block and fill them into the class members
+    virtual bool read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // write the class members values into a memory block
+    virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // get the total packet size
+    virtual std::size_t totalSize() const;
+
+    // totally read the values stored into a memory block and fill them into the class members
+    virtual bool totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // totally write the class members values into a memory block
+    virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    uint8_t m_acquisition_mode; // SI Image SGL II Acquisition Mode (in 8 bits this time!)
+};
+
+/*
+ *  \class NetCommandSetExposureTime
+ *  \brief This class is a Set Exposure Time packet class
+ */
+class NetCommandSetExposureTime : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetCommandSetExposureTime();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // get the specific packet size
+    virtual std::size_t size() const;
+
+    // read the values stored into a memory block and fill them into the class members
+    virtual bool read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // write the class members values into a memory block
+    virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // get the total packet size
+    virtual std::size_t totalSize() const;
+
+    // totally read the values stored into a memory block and fill them into the class members
+    virtual bool totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // totally write the class members values into a memory block
+    virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    double m_exposure_time_sec; // exposure time (in seconds this time!)
+};
+
+/*
+ *  \class NetCommandSetFormatParameters
+ *  \brief This class is a Set Format Parameters packet class
+ */
+class NetCommandSetFormatParameters : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetCommandSetFormatParameters();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // get the specific packet size
+    virtual std::size_t size() const;
+
+    // read the values stored into a memory block and fill them into the class members
+    virtual bool read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // write the class members values into a memory block
+    virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // get the total packet size
+    virtual std::size_t totalSize() const;
+
+    // totally read the values stored into a memory block and fill them into the class members
+    virtual bool totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // totally write the class members values into a memory block
+    virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    int32_t  m_serial_origin       ; // CCD Format Serial Origin
+    int32_t  m_serial_length       ; // CCD Format Serial Length
+    int32_t  m_serial_binning      ; // CCD Format Serial Binning
+    int32_t  m_parallel_origin     ; // CCD Format Parallel Origin
+    int32_t  m_parallel_length     ; // CCD Format Parallel Length
+    int32_t  m_parallel_binning    ; // CCD Format Parallel Binning
+};
+
+/*
+ *  \class NetCommandSetAcquisitionType
+ *  \brief This class is a Set Acquisition Type packet class
+ */
+class NetCommandSetAcquisitionType : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetCommandSetAcquisitionType();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // get the specific packet size
+    virtual std::size_t size() const;
+
+    // read the values stored into a memory block and fill them into the class members
+    virtual bool read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // write the class members values into a memory block
+    virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // get the total packet size
+    virtual std::size_t totalSize() const;
+
+    // totally read the values stored into a memory block and fill them into the class members
+    virtual bool totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // totally write the class members values into a memory block
+    virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    uint8_t m_acquisition_type; // SI Image SGL II Acquisition type (in 8 bits this time!)
 };
 
 /*
@@ -352,6 +547,21 @@ public:
     // constructor
     NetGenericAnswer();
 
+    // check if this is a command done packet
+    bool isCommandDonePacket() const;
+
+    // check if this is a get status packet
+    bool isGetStatusPacket() const;
+
+    // check if this is a get camera parameters
+    bool isGetCameraParameters() const;
+
+    // check if this is a get settings
+    bool isGetSettings() const;
+
+    // check if there is an error
+    bool hasError() const;
+
     //-----------------------
     // not recursive methods
     //-----------------------
@@ -387,9 +597,10 @@ protected:
     uint16_t m_data_type           ; // 2000 .. 2999
     int32_t  m_specific_data_lenght; // 0 = no data
 
-    static uint16_t g_data_type_get_status           ; // to check the Data type
-    static uint16_t g_data_type_get_camera_parameters; // to check the Data type
-    static uint16_t g_data_type_get_settings         ; // to check the Data type
+    static const uint16_t g_data_type_get_status           ; // to check the Data type
+    static const uint16_t g_data_type_get_camera_parameters; // to check the Data type
+    static const uint16_t g_data_type_get_settings         ; // to check the Data type
+    static const uint16_t g_data_type_command_done         ; // to check the Data type
 };
 
 /*
@@ -478,13 +689,13 @@ public:
 
 protected:
     // status name of the key to read in the complete status string returned by the detector
-    static std::string g_server_flags_status_name;
+    static const std::string g_server_flags_status_name;
 
     // delimiter used in a key status (name,value,unity)
-    static std::string g_server_flags_delimiter;
+    static const std::string g_server_flags_delimiter;
 
     // position of a value in a key status (name,value,unity)
-    static std::size_t g_server_flags_value_position;
+    static const std::size_t g_server_flags_value_position;
 };
 
 /*
@@ -513,23 +724,23 @@ public:
 
 protected:
     // factory group name for keys to read
-    static std::string g_server_flags_group_factory_name;
+    static const std::string g_server_flags_group_factory_name;
 
     // miscellaneous group name for keys to read
-    static std::string g_server_flags_group_miscellaneous_name;
+    static const std::string g_server_flags_group_miscellaneous_name;
 
     // keys names
-    static std::string g_server_flags_instrument_model_name         ;
-    static std::string g_server_flags_instrument_serial_number_name ;
-    static std::string g_server_flags_instrument_serial_size_name   ;
-    static std::string g_server_flags_instrument_parallel_size_name ;
-    static std::string g_server_flags_instrument_bits_per_pixel_name;
+    static const std::string g_server_flags_instrument_model_name         ;
+    static const std::string g_server_flags_instrument_serial_number_name ;
+    static const std::string g_server_flags_instrument_serial_size_name   ;
+    static const std::string g_server_flags_instrument_parallel_size_name ;
+    static const std::string g_server_flags_instrument_bits_per_pixel_name;
 
     // delimiter used in a key (group,name,value)
-    static std::string g_server_flags_delimiter;
+    static const std::string g_server_flags_delimiter;
 
     // position of a value in a key (group,name,value)
-    static std::size_t g_server_flags_value_position;
+    static const std::size_t g_server_flags_value_position;
 };
 
 /*
@@ -541,7 +752,7 @@ class NetAnswerGetSettings : public NetGenericAnswer
     friend class CameraControl;    
 
 public:
-    // hardware status values
+    // hardware acquisition type values
     typedef enum AcquisitionType
     {
         Light     = 0,
@@ -549,6 +760,17 @@ public:
         Triggered = 2,
 
     } AcquisitionType;
+
+    // hardware acquisition mode values
+    typedef enum AcquisitionMode
+    {
+        SingleImage    = 0,
+        Average        = 1,
+        MultipleImages = 2,
+        MultipleFrames = 3,
+        Focus          = 4,
+
+    } AcquisitionMode;
 
     // constructor
     NetAnswerGetSettings();
@@ -599,6 +821,151 @@ protected:
     int32_t  m_parallel_binning    ; // CCD Format Parallel Binning
 };
 
+/*
+ *  \class NetAnswerCommandDone
+ *  \brief This class is a Command Done packet class
+ */
+class NetAnswerCommandDone : public NetGenericAnswer
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetAnswerCommandDone();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // get the specific packet size
+    virtual std::size_t size() const;
+
+    // read the values stored into a memory block and fill them into the class members
+    virtual bool read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // write the class members values into a memory block
+    virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // get the total packet size
+    virtual std::size_t totalSize() const;
+
+    // totally read the values stored into a memory block and fill them into the class members
+    virtual bool totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // totally write the class members values into a memory block
+    virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    uint16_t m_function_number; // function which was executed (1000 .. 1999)
+};
+
+/*
+ *  \class NetAnswerSetAcquisitionMode
+ *  \brief This class is a Command Done packet class for set acquisition mode answer
+ */
+class NetAnswerSetAcquisitionMode : public NetAnswerCommandDone
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetAnswerSetAcquisitionMode();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+};
+
+/*
+ *  \class NetAnswerSetExposureTime
+ *  \brief This class is a Command Done packet class for set exposure time answer
+ */
+class NetAnswerSetExposureTime : public NetAnswerCommandDone
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetAnswerSetExposureTime();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+};
+
+/*
+ *  \class NetAnswerSetFormatParameters
+ *  \brief This class is a Command Done packet class for set format parameters answer
+ */
+class NetAnswerSetFormatParameters : public NetAnswerCommandDone
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetAnswerSetFormatParameters();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+};
+
+/*
+ *  \class NetAnswerSetAcquisitionType
+ *  \brief This class is a Command Done packet class for set acquisition type answer
+ */
+class NetAnswerSetAcquisitionType : public NetAnswerCommandDone
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetAnswerSetAcquisitionType();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+};
 
 } // namespace Spectral
 } // namespace lima

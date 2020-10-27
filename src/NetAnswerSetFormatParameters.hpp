@@ -21,21 +21,17 @@
 //###########################################################################
 
 //===================================================================================================
-// Class NetAnswerGetStatus
+// Class NetAnswerSetFormatParameters
 //===================================================================================================
-const std::string NetAnswerGetStatus::g_server_flags_status_name    = "Server Flags";
-const std::string NetAnswerGetStatus::g_server_flags_delimiter      = ",";
-const std::size_t NetAnswerGetStatus::g_server_flags_value_position = 1; // starts at 0
-
 /****************************************************************************************************
- * \fn NetAnswerGetStatus()
+ * \fn NetAnswerSetFormatParameters()
  * \brief  constructor
  * \param  none
  * \return none
  ****************************************************************************************************/
-NetAnswerGetStatus::NetAnswerGetStatus()
+NetAnswerSetFormatParameters::NetAnswerSetFormatParameters()
 {
-    m_packet_name = "Answer GetStatus";
+    m_packet_name = "Answer SetFormatParameters";
 }
 
 /****************************************************************************************************
@@ -44,9 +40,9 @@ NetAnswerGetStatus::NetAnswerGetStatus()
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetAnswerGetStatus::log() const
+void NetAnswerSetFormatParameters::log() const
 {
-    std::cout << "-- NetAnswerGetStatus content --" << std::endl;
+    std::cout << "-- NetAnswerSetFormatParameters content --" << std::endl;
 }
 
 /****************************************************************************************************
@@ -55,10 +51,10 @@ void NetAnswerGetStatus::log() const
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetAnswerGetStatus::totalLog() const
+void NetAnswerSetFormatParameters::totalLog() const
 {
-    NetAnswerGenericString::totalLog();
-    NetAnswerGetStatus::log();
+    NetAnswerCommandDone::totalLog();
+    NetAnswerSetFormatParameters::log();
 }
 
 //###########################################################################

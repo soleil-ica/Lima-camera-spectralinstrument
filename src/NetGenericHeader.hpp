@@ -23,11 +23,11 @@
 //===================================================================================================
 // Class NetGenericHeader
 //===================================================================================================
-uint8_t  NetGenericHeader::g_server_command_identifier         = 0   ;
-uint8_t  NetGenericHeader::g_packet_identifier_for_command     = 128 ;
-uint8_t  NetGenericHeader::g_packet_identifier_for_acknowledge = 129 ;
-uint8_t  NetGenericHeader::g_packet_identifier_for_data        = 131 ;
-uint8_t  NetGenericHeader::g_packet_identifier_for_image       = 132 ;
+const uint8_t  NetGenericHeader::g_server_command_identifier         = 0   ;
+const uint8_t  NetGenericHeader::g_packet_identifier_for_command     = 128 ;
+const uint8_t  NetGenericHeader::g_packet_identifier_for_acknowledge = 129 ;
+const uint8_t  NetGenericHeader::g_packet_identifier_for_data        = 131 ;
+const uint8_t  NetGenericHeader::g_packet_identifier_for_image       = 132 ;
 
 //------------------------------------------------------------
 // specialized template methods for 8 bits unsigned integers
@@ -218,7 +218,7 @@ NetGenericHeader::NetGenericHeader()
 }
 
 /****************************************************************************************************
- * \fn isCommandPacket()
+ * \fn bool isCommandPacket()
  * \brief  check if this is a command packet
  * \param  none
  * \return true if this is a command packet
@@ -229,7 +229,7 @@ bool NetGenericHeader::isCommandPacket() const
 }
 
 /****************************************************************************************************
- * \fn isCommandPacket()
+ * \fn bool isAcknowledgePacket()
  * \brief  check if this is a acknowledge packet
  * \param  none
  * \return true if this is a acknowledge packet
@@ -240,7 +240,7 @@ bool NetGenericHeader::isAcknowledgePacket() const
 }
 
 /****************************************************************************************************
- * \fn isDataPacket()
+ * \fn bool isDataPacket()
  * \brief  check if this is a data packet
  * \param  none
  * \return true if this is a data packet
@@ -251,7 +251,7 @@ bool NetGenericHeader::isDataPacket() const
 }
 
 /****************************************************************************************************
- * \fn isImagePacket()
+ * \fn bool isImagePacket()
  * \brief  check if this is an image packet
  * \param  none
  * \return true if this is an image packet

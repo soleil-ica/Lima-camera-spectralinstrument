@@ -57,9 +57,15 @@ NetPacketsGroups::NetPacketsGroups()
     // we should create all the needed lists which are fixed during runtime
     createGroup("acknowledge list", static_cast<NetPacketsGroupId>(NetGenericHeader::g_packet_identifier_for_acknowledge));
     createGroup("image list"      , static_cast<NetPacketsGroupId>(NetGenericHeader::g_packet_identifier_for_image));
+
     createGroup("get status list" , NetGenericAnswer::g_data_type_get_status           );
     createGroup("get parameters"  , NetGenericAnswer::g_data_type_get_camera_parameters);
     createGroup("get settings"    , NetGenericAnswer::g_data_type_get_settings         );
+
+    createGroup("set acquisition mode" , NetCommandHeader::g_function_number_set_acquisition_mode );
+    createGroup("set exposure time"    , NetCommandHeader::g_function_number_set_exposure_time    );
+    createGroup("set format parameters", NetCommandHeader::g_function_number_set_format_parameters);
+    createGroup("set acquisition type" , NetCommandHeader::g_function_number_set_acquisition_type );
 }
 
 /****************************************************************************************************
@@ -147,6 +153,27 @@ void NetPacketsGroups::createGroup(const std::string & in_name, NetPacketsGroupI
     }
 }
 
+/****************************************************************************************************
+ * \fn void NetPacketsGroups::setDelayBeforeTimeoutSec(double in_delay_before_timeout_sec)
+ * \brief  set the timeout delay in seconds for all the groups
+ * \param  in_wait_packet_timeout_sec timeout delay in seconds
+ * \return none
+ ****************************************************************************************************/
+void NetPacketsGroups::setDelayBeforeTimeoutSec(int in_wait_packet_timeout_sec)
+{
+    NetPacketsMap::iterator it;
 
+    for (it = m_container.begin(); it != m_container.end(); ++it) 
+    {
+        ProtectedList<NetGenericHeader> * group = it->second;
+
+        group->setDelayBeforeTimeoutSec(static_cast<double>(in_wait_packet_timeout_sec));
+
+    #ifdef NET_PACKETS_GROUPS_DEBUG
+        std::cout << "NetPacketsGroups::setDelayBeforeTimeoutSec: " << in_wait_packet_timeout_sec 
+                  << " for group: " << group->getName() << std::endl;
+    #endif
+    }
+}
 
 //###########################################################################

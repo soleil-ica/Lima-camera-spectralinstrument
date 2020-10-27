@@ -69,15 +69,19 @@ Camera::Camera(const std::string & connection_address          ,
 {
     DEB_CONSTRUCTOR();
 
-    const int connection_timeout_sec = 2   ; // 2 seconds - TODO - property or move the constant in the class
-    const int selection_timeout_sec  = 2   ; // 2 seconds - TODO - property or move the constant in the class
-    const int camera_identifier      = 1   ; // TODO? - property or move the constant in the class
-    const int data_update_delay_msec = 1000; // TODO? - property or move the constant in the class
+    const int connection_timeout_sec  = 2   ; // 2 seconds - TODO - property or move the constant in the class
+    const int reception_timeout_sec   = 2   ; // 2 seconds - TODO - property or move the constant in the class
+    const int wait_packet_timeout_sec = 3   ; // 3 seconds - TODO - property or move the constant in the class
+    const int camera_identifier       = 1   ; // TODO? - property or move the constant in the class
+    const int data_update_delay_msec  = 1000; // TODO? - property or move the constant in the class
 
     m_connection_address           = connection_address          ;
     m_connection_port              = connection_port             ;
     m_image_packet_pixels_nb       = image_packet_pixels_nb      ;
     m_image_packet_delay_micro_sec = image_packet_delay_micro_sec;
+    m_nb_frames_to_acquire         = 0                           ;
+    m_latency_time_msec            = 0                           ;
+    m_trigger_mode                 = lima::TrigMode::IntTrig     ;
 
     setDataUpdateDelayMsec(data_update_delay_msec);
 
@@ -87,13 +91,12 @@ Camera::Camera(const std::string & connection_address          ,
     g_singleton = this;
 
     // creating the camera control instance
-    CameraControl::create();
+    CameraControl::create(camera_identifier      , 
+                          connection_timeout_sec , 
+                          reception_timeout_sec  , 
+                          wait_packet_timeout_sec);
 
     // starting the tcp/ip connection
-    CameraControl::getInstance()->setConnectionTimeout(connection_timeout_sec);
-    CameraControl::getInstance()->setReceptionTimeout (selection_timeout_sec );
-    CameraControl::getInstance()->setCameraIdentifier (camera_identifier     );
-
     CameraControl::getInstance()->connect(m_connection_address, m_connection_port);
 
     // init some data (status, exposure time, etc...)
@@ -107,6 +110,23 @@ Camera::Camera(const std::string & connection_address          ,
     {
         THROW_HW_ERROR(Error) << "Unable to initialize the camera (Check if it is switched on or if an other software is currently using it).";
     }
+
+// change the exposure time by sending a command to the hardware
+CameraControl::getInstance()->setExposureTimeMsec(50);
+
+// Change the acquisition mode by sending a command to the hardware
+CameraControl::getInstance()->setAcquisitionMode(NetAnswerGetSettings::AcquisitionMode::SingleImage);
+
+// Change the format parameters by sending a command to the hardware
+CameraControl::getInstance()->setBinning(1, 1);
+
+// Change the roi by sending a command to the hardware
+CameraControl::getInstance()->setRoi(5, 10, 200, 400);
+
+// Change the acquisition type by sending a command to the hardware
+CameraControl::getInstance()->setAcquisitionType(NetAnswerGetSettings::AcquisitionType::Triggered);
+
+
 
     // creating the data update thread
     CameraUpdateDataThread::create();

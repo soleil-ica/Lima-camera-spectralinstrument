@@ -100,6 +100,9 @@ class CameraControl : public CameraSingleton<CameraControl>
         // configure the reception timeout in seconds
         void setReceptionTimeout(int in_reception_timeout_sec);
 
+        // configure the wait packet timeout in seconds
+        void setWaitPacketTimeout(int in_wait_packet_timeout_sec);
+
         // configure the camera identifier
         void setCameraIdentifier(int in_camera_identifier);
 
@@ -129,6 +132,9 @@ class CameraControl : public CameraSingleton<CameraControl>
 
         // get the acquisition type
         NetAnswerGetSettings::AcquisitionType getAcquisitionType() const;
+
+        // get the acquisition mode
+        NetAnswerGetSettings::AcquisitionMode getAcquisitionMode() const;
 
         // get the CCD Format Serial Origin
         std::size_t getSerialOrigin() const;
@@ -169,6 +175,9 @@ class CameraControl : public CameraSingleton<CameraControl>
         // Wait for a new data packet to be received
         bool waitDataPacket(uint16_t in_data_type, NetGenericHeader * & out_packet);
 
+        // Wait for a new command done packet to be received
+        bool waitCommandDonePacket(uint16_t in_function_number, NetGenericHeader * & out_packet);
+
        /**************************************************************************************************
         * COMMANDS MANAGEMENT
         **************************************************************************************************/
@@ -181,11 +190,32 @@ class CameraControl : public CameraSingleton<CameraControl>
         // Update the settings by sending a command to the hardware
         bool updateSettings();
 
+        // change the exposure time by sending a command to the hardware
+        bool setExposureTimeMsec(uint32_t in_exposure_time_msec);
+
+        // Change the acquisition mode by sending a command to the hardware
+        bool setAcquisitionMode(NetAnswerGetSettings::AcquisitionMode in_acquisition_mode);
+
+        // Change the format parameters by sending a command to the hardware
+        bool setBinning(std::size_t in_serial_binning, std::size_t in_parallel_binning);
+
+        // Change the roi by sending a command to the hardware
+        bool setRoi(std::size_t in_serial_origin  ,
+                    std::size_t in_parallel_origin, 
+                    std::size_t in_serial_length  ,
+                    std::size_t in_parallel_length);
+
+        // Change the acquisition type by sending a command to the hardware
+        bool setAcquisitionType(NetAnswerGetSettings::AcquisitionType in_acquisition_type);
+
        /***************************************************************************************************
         * SINGLETON MANAGEMENT
         ***************************************************************************************************/
         // Create the singleton instance
-        static void create();
+        static void create(int in_camera_identifier      ,
+                           int in_connection_timeout_sec ,
+                           int in_reception_timeout_sec  ,
+                           int in_wait_packet_timeout_sec);
 
     protected:
         // send a tcp/ip packet
@@ -227,9 +257,20 @@ class CameraControl : public CameraSingleton<CameraControl>
         // Send a command to the detector and does not wait an acknowledge (only special commands)
         bool sendCommandWithoutAck(NetCommandHeader * in_out_command, int32_t & out_error);
 
+        // Change the format parameters by sending a command to the hardware
+        bool setFormatParameters(std::size_t in_serial_origin   ,
+                                 std::size_t in_serial_length   , 
+                                 std::size_t in_serial_binning  ,
+                                 std::size_t in_parallel_origin , 
+                                 std::size_t in_parallel_length ,
+                                 std::size_t in_parallel_binning);
+
     private:
         // constructor
-        explicit CameraControl();
+        explicit CameraControl(int in_camera_identifier      ,
+                               int in_connection_timeout_sec ,
+                               int in_reception_timeout_sec  ,
+                               int in_wait_packet_timeout_sec);
 
         // destructor (needs to be virtual)
         virtual ~CameraControl();
@@ -283,6 +324,9 @@ class CameraControl : public CameraSingleton<CameraControl>
         // reception timeout in seconds
         int m_reception_timeout_sec;
 
+        // wait packet timeout in seconds
+        int m_wait_packet_timeout_sec;
+
         // camera identifier (starts at 1)
         int m_camera_identifier;
 
@@ -312,6 +356,9 @@ class CameraControl : public CameraSingleton<CameraControl>
 
         // SI Image SGL II Acquisition Type
         NetAnswerGetSettings::AcquisitionType m_acquisition_type;
+
+        // SI Image SGL II Acquisition Mode
+        NetAnswerGetSettings::AcquisitionMode m_acquisition_mode;
 
         // CCD Format Serial Origin
         std::size_t  m_serial_origin; 

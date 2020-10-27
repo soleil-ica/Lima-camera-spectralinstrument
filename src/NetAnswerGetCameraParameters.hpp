@@ -23,17 +23,17 @@
 //===================================================================================================
 // Class NetAnswerGetCameraParameters
 //===================================================================================================
-std::string NetAnswerGetCameraParameters::g_server_flags_group_factory_name       = "Factory"      ;
-std::string NetAnswerGetCameraParameters::g_server_flags_group_miscellaneous_name = "Miscellaneous";
+const std::string NetAnswerGetCameraParameters::g_server_flags_group_factory_name       = "Factory"      ;
+const std::string NetAnswerGetCameraParameters::g_server_flags_group_miscellaneous_name = "Miscellaneous";
 
-std::string NetAnswerGetCameraParameters::g_server_flags_instrument_model_name          = "Instrument Model";
-std::string NetAnswerGetCameraParameters::g_server_flags_instrument_serial_number_name  = "Instrument SN"   ;
-std::string NetAnswerGetCameraParameters::g_server_flags_instrument_serial_size_name    = "Serial Size"     ;
-std::string NetAnswerGetCameraParameters::g_server_flags_instrument_parallel_size_name  = "Parallel Size"   ;
-std::string NetAnswerGetCameraParameters::g_server_flags_instrument_bits_per_pixel_name = "Bits Per Pixel"  ;
+const std::string NetAnswerGetCameraParameters::g_server_flags_instrument_model_name          = "Instrument Model";
+const std::string NetAnswerGetCameraParameters::g_server_flags_instrument_serial_number_name  = "Instrument SN"   ;
+const std::string NetAnswerGetCameraParameters::g_server_flags_instrument_serial_size_name    = "Serial Size"     ;
+const std::string NetAnswerGetCameraParameters::g_server_flags_instrument_parallel_size_name  = "Parallel Size"   ;
+const std::string NetAnswerGetCameraParameters::g_server_flags_instrument_bits_per_pixel_name = "Bits Per Pixel"  ;
 
-std::string NetAnswerGetCameraParameters::g_server_flags_delimiter      = ",";
-std::size_t NetAnswerGetCameraParameters::g_server_flags_value_position = 2  ; // starts at 0
+const std::string NetAnswerGetCameraParameters::g_server_flags_delimiter      = ",";
+const std::size_t NetAnswerGetCameraParameters::g_server_flags_value_position = 2  ; // starts at 0
 
 /****************************************************************************************************
  * \fn NetAnswerGetCameraParameters()

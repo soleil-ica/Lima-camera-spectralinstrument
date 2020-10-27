@@ -26,11 +26,27 @@
 @return true if the given trigger mode is supported
 */
 //-----------------------------------------------------------------------------
-bool Camera::checkTrigMode(TrigMode trig_mode) ///< [in] trigger mode to check
+bool Camera::checkTrigMode(TrigMode trig_mode) const ///< [in] trigger mode to check
 {
     DEB_MEMBER_FUNCT();
     DEB_PARAM() << DEB_VAR1(trig_mode);
-    return true;
+
+    bool valid_mode;    
+
+    switch (trig_mode)
+    {       
+        case lima::TrigMode::IntTrig      :
+        case lima::TrigMode::ExtTrigSingle:
+        case lima::TrigMode::ExtTrigMult  :
+            valid_mode = true;
+            break;
+
+        default:
+            valid_mode = false;
+            break;
+    }
+
+    return valid_mode;
 }
 
 //-----------------------------------------------------------------------------
@@ -41,96 +57,92 @@ void Camera::setTrigMode(TrigMode mode) ///< [in] trigger mode to set
     DEB_MEMBER_FUNCT();
     DEB_PARAM() << DEB_VAR1(mode);
 
-//    m_trig_mode = mode;    
+    if(checkTrigMode(mode))
+    {
+        m_trigger_mode = mode;
+    }
+    else
+    {
+        THROW_HW_ERROR(ErrorType::Error) << "Cannot change the Trigger Mode of the camera, this mode is not managed:" << mode;
+    }
 }
 
 //-----------------------------------------------------------------------------
 /// Get the current trigger mode
 //-----------------------------------------------------------------------------
-void Camera::getTrigMode(TrigMode& mode) ///< [out] current trigger mode
+void Camera::getTrigMode(TrigMode& mode) const ///< [out] current trigger mode
 {
     DEB_MEMBER_FUNCT();
-//    NetAnswerGetSettings::AcquisitionType acquisition_type = CameraControl::getConstInstance()->getAcquisitionType();
-    mode = TrigMode::IntTrig;
+    mode = m_trigger_mode;
     DEB_RETURN() << DEB_VAR1(mode);
 }
 
 //-----------------------------------------------------------------------------
-/// Set the new exposure time
+/// Set the new exposure time (ms)
 //-----------------------------------------------------------------------------
-void Camera::setExpTime(double exp_time) ///< [in] exposure time to set
+void Camera::setExpTime(uint32_t exp_time_ms) ///< [in] exposure time to set
 {
     DEB_MEMBER_FUNCT();
-    DEB_PARAM() << DEB_VAR1(exp_time);
-
-/*    m_exp_time = exp_time;
-
-    double temp_exp_time;
-    getExpTime(temp_exp_time);
-    manage_trace( deb, "Changed Exposure time", DCAMERR_NONE, NULL, "exp:%lf >> real:%lf", m_exp_time, temp_exp_time);*/
+    DEB_PARAM() << DEB_VAR1(exp_time_ms);
+    CameraControl::getInstance()->setExposureTimeMsec(exp_time_ms);
 }
 
 //-----------------------------------------------------------------------------
-/// Get the current exposure time
+/// Get the current exposure time (ms)
 //-----------------------------------------------------------------------------
-void Camera::getExpTime(double& exp_time) ///< [out] current exposure time
+void Camera::getExpTime(uint32_t & exp_time_ms) const ///< [out] current exposure time
 {
     DEB_MEMBER_FUNCT();
-    exp_time = static_cast<double>(CameraControl::getConstInstance()->getExposureTimeMsec());
+    exp_time_ms = CameraControl::getConstInstance()->getExposureTimeMsec();
+    DEB_RETURN() << DEB_VAR1(exp_time_ms);
 }
 
 //-----------------------------------------------------------------------------
 /// Set the new latency time between images
 //-----------------------------------------------------------------------------
-void Camera::setLatTime(double lat_time) ///< [in] latency time
+void Camera::setLatTime(uint32_t lat_time_ms) ///< [in] latency time
 {
     DEB_MEMBER_FUNCT();
-    DEB_PARAM() << DEB_VAR1(lat_time);
-
-/*    if (lat_time != 0.0)
-    {
-        THROW_HW_ERROR(Error) << "Latency is not supported";
-    }*/
+    DEB_PARAM() << DEB_VAR1(lat_time_ms);
+    m_latency_time_msec = lat_time_ms; // latency time in milli-seconds
 }
 
 //-----------------------------------------------------------------------------
 /// Get the current latency time
 //-----------------------------------------------------------------------------
-void Camera::getLatTime(double& lat_time) ///< [out] current latency time
+void Camera::getLatTime(uint32_t & lat_time_ms) const ///< [out] current latency time
 {
     DEB_MEMBER_FUNCT();
-//    lat_time = 0.0;
-    DEB_RETURN() << DEB_VAR1(lat_time);
+    lat_time_ms = m_latency_time_msec;
+    DEB_RETURN() << DEB_VAR1(lat_time_ms);
 }
 
 //-----------------------------------------------------------------------------
-/// Get the exposure time range
+/// Get the exposure time range (ms)
 //-----------------------------------------------------------------------------
-void Camera::getExposureTimeRange(double& min_expo,    ///< [out] minimum exposure time
-                                  double& max_expo) ///< [out] maximum exposure time
-                                  const
+void Camera::getExposureTimeRange(uint32_t & min_expo_ms,       ///< [out] minimum exposure time
+                                  uint32_t & max_expo_ms) const ///< [out] maximum exposure time
 {
     DEB_MEMBER_FUNCT();
 
-    min_expo = 0.0;
-    max_expo = 100000.0;
+    min_expo_ms = 0;
+    max_expo_ms = 0xFFFFFFFFu;
 
-    DEB_RETURN() << DEB_VAR2(min_expo, max_expo);
+    DEB_RETURN() << DEB_VAR2(min_expo_ms, max_expo_ms);
 }
 
 //-----------------------------------------------------------------------------
-///  Get the latency time range
+///  Get the latency time range (ms)
 //-----------------------------------------------------------------------------
-void Camera::getLatTimeRange(double& min_lat, ///< [out] minimum latency
-                             double& max_lat) ///< [out] maximum latency
-                             const
+void Camera::getLatTimeRange(uint32_t & min_lat_ms,       ///< [out] minimum latency
+                             uint32_t & max_lat_ms) const ///< [out] maximum latency
 {   
     DEB_MEMBER_FUNCT();
 
-    min_lat = 0.0;
-    max_lat = 100000.0;
+    min_lat_ms = 0;
+    max_lat_ms = 0xFFFFFFFFu;
 
-    DEB_RETURN() << DEB_VAR2(min_lat, max_lat);
+    DEB_RETURN() << DEB_VAR2(min_lat_ms, max_lat_ms);
 }
 
 //-----------------------------------------------------------------------------
@@ -140,25 +152,23 @@ void Camera::setNbFrames(int nb_frames) ///< [in] number of frames to take
 {
     DEB_MEMBER_FUNCT();
     DEB_PARAM() << DEB_VAR1(nb_frames);
-    
-//    m_nb_frames = nb_frames;
+    m_nb_frames_to_acquire = nb_frames;
 }
 
 //-----------------------------------------------------------------------------
 /// Get the number of frames to be taken
 //-----------------------------------------------------------------------------
-void Camera::getNbFrames(int& nb_frames) ///< [out] current number of frames to take
+void Camera::getNbFrames(int & nb_frames) const ///< [out] current number of frames to take
 {
     DEB_MEMBER_FUNCT();
-//    nb_frames = m_nb_frames;
-    nb_frames = 0;
+    nb_frames = m_nb_frames_to_acquire;
     DEB_RETURN() << DEB_VAR1(nb_frames);
 }
 
 //-----------------------------------------------------------------------------
 /// Get the current acquired frames
 //-----------------------------------------------------------------------------
-void Camera::getNbHwAcquiredFrames(int &nb_acq_frames)
+void Camera::getNbHwAcquiredFrames(int & nb_acq_frames) const
 { 
     DEB_MEMBER_FUNCT();    
 //    nb_acq_frames = m_image_number;

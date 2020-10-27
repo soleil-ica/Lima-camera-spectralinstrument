@@ -26,6 +26,8 @@
  * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on October 23, 2020
  ****************************************************************************************************/
+//#define PROTECTED_LIST_ACTIVATE_DEBUG
+
 /****************************************************************************************************
  * \fn template <class Elem> ProtectedList<Elem>::ProtectedList(std::string in_name)
  * \brief  constructor
@@ -35,8 +37,8 @@
 template <class Elem>
 ProtectedList<Elem>::ProtectedList(std::string in_name)
 {
-    // storing the name of the instance (for stats)
-    m_name = in_name;
+    m_name                     = in_name; // storing the name of the instance (for stats)
+    m_delay_before_timeout_sec = 0.0    ;
 }
 
 /****************************************************************************************************
@@ -64,6 +66,18 @@ template <class Elem>
 const std::string & ProtectedList<Elem>::getName() const
 {
     return m_name;
+}
+
+/****************************************************************************************************
+ * \fn template <class Elem> void ProtectedList<Elem>::setDelayBeforeTimeoutSec(double in_delay_before_timeout_sec)
+ * \brief  set the timeout delay in seconds
+ * \param  in_delay_before_timeout_sec timeout delay in seconds
+ * \return none
+ ****************************************************************************************************/
+template <class Elem>
+void ProtectedList<Elem>::setDelayBeforeTimeoutSec(double in_delay_before_timeout_sec)
+{
+    m_delay_before_timeout_sec = in_delay_before_timeout_sec;
 }
 
 /****************************************************************************************************
@@ -144,11 +158,14 @@ void ProtectedList<Elem>::put(Elem * in_element)
         // protecting the multi-threads access
         lima::AutoMutex not_empty_mutex = notEmptyLock(); 
 
+#ifdef  PROTECTED_LIST_ACTIVATE_DEBUG
         std::cout << "put: container was empty, need to signal others threads..." << std::endl;
-
+#endif
         m_condition_is_not_empty.broadcast();
 
+#ifdef  PROTECTED_LIST_ACTIVATE_DEBUG
         std::cout << "put: container was empty, others threads were woken up." << std::endl;
+#endif
     }
 }
 
@@ -245,22 +262,28 @@ Elem * ProtectedList<Elem>::front()
 }
 
 /****************************************************************************************************
- * \fn template <class Elem> void ProtectedList<Elem>::waiting_while_empty() const
+ * \fn template <class Elem> bool ProtectedList<Elem>::waiting_while_empty() const
  * \brief waits till the container is no more empty.
  * \param  none
- * \return none
+ * \return true if we were waken up, else false if a timeout occured
  ****************************************************************************************************/
 template <class Elem>
-void ProtectedList<Elem>::waiting_while_empty() const
+bool ProtectedList<Elem>::waiting_while_empty() const
 {
     // protecting the multi-threads access
     lima::AutoMutex not_empty_mutex = notEmptyLock(); 
 
+    bool result = true;
+
     if(m_elements.empty())
     {
+#ifdef  PROTECTED_LIST_ACTIVATE_DEBUG
         std::cout << "waiting_while_empty: container is empty, need to wait..." << std::endl;
+#endif
+        result = m_condition_is_not_empty.wait(m_delay_before_timeout_sec);
 
-        if(!m_condition_is_not_empty.wait(5))
+#ifdef  PROTECTED_LIST_ACTIVATE_DEBUG
+        if(!result)
         {
             std::cout << "waiting_while_empty: timeout!" << std::endl;
         }
@@ -268,5 +291,8 @@ void ProtectedList<Elem>::waiting_while_empty() const
         {
             std::cout << "waiting_while_empty: was waken up." << std::endl;
         }
+ #endif
     }
+
+    return result;
 }

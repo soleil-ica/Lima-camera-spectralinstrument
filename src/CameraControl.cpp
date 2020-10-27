@@ -50,24 +50,32 @@
 using namespace lima;
 using namespace lima::Spectral;
 
-#define SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
-#define SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
+//#define SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
+//#define SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
 
 /****************************************************************************************************
- * \fn CameraControl()
+ * \fn CameraControl(int in_camera_identifier, int in_connection_timeout_sec, int in_reception_timeout_sec, int in_wait_packet_timeout_sec)
  * \brief  constructor
- * \param  none
+ * \param  in_camera_identifier camera identifier
+ * \param  in_connection_timeout_sec  connection timeout in seconds
+ * \param  in_reception_timeout_sec   reception timeout in seconds
+ * \param  in_wait_packet_timeout_sec wait packet timeout in seconds
  * \return none
  ****************************************************************************************************/
-CameraControl::CameraControl()
+CameraControl::CameraControl(int in_camera_identifier      ,
+                             int in_connection_timeout_sec ,
+                             int in_reception_timeout_sec  ,
+                             int in_wait_packet_timeout_sec)
 {
     DEB_CONSTRUCTOR();
 
-    // default values
-    m_connection_timeout_sec = 0;
-    m_reception_timeout_sec  = 0;
-    m_is_connected           = false;
+    setConnectionTimeout(in_connection_timeout_sec );
+    setReceptionTimeout (in_reception_timeout_sec  );
+    setWaitPacketTimeout(in_wait_packet_timeout_sec);
+    setCameraIdentifier (in_camera_identifier      );
 
+    // default values
+    m_is_connected  = false;
     m_latest_status = DetectorStatus::Ready;
     
     m_model         = "Unknown Model"        ;
@@ -86,7 +94,8 @@ CameraControl::CameraControl()
     m_parallel_length      = 0; 
     m_parallel_binning     = 0; 
 
-    m_acquisition_type = NetAnswerGetSettings::Light;
+    m_acquisition_type = NetAnswerGetSettings::AcquisitionType::Light      ;
+    m_acquisition_mode = NetAnswerGetSettings::AcquisitionMode::SingleImage;
 
 	// Ignore the sigpipe we get we try to send quit to
 	// dead server in disconnect, just use error codes
@@ -136,6 +145,20 @@ void CameraControl::setConnectionTimeout(int in_connection_timeout_sec)
 void CameraControl::setReceptionTimeout(int in_reception_timeout_sec)
 {
     m_reception_timeout_sec = in_reception_timeout_sec;
+}
+
+/****************************************************************************************************
+ * \fn void setWaitPacketTimeout(int in_wait_packet_timeout_sec)
+ * \brief  configure the wait packet timeout in seconds
+ * \param  in_wait_packet_timeout_sec wait packet timeout in seconds
+ * \return none
+ ****************************************************************************************************/
+void CameraControl::setWaitPacketTimeout(int in_wait_packet_timeout_sec)
+{
+    m_wait_packet_timeout_sec = in_wait_packet_timeout_sec;
+
+    // changing all the groups'timeout delays...
+    m_packets_container.setDelayBeforeTimeoutSec(m_wait_packet_timeout_sec);
 }
 
 /****************************************************************************************************
@@ -246,6 +269,17 @@ uint32_t CameraControl::getNbImagesToAcquire() const
 NetAnswerGetSettings::AcquisitionType CameraControl::getAcquisitionType() const
 {
     return m_acquisition_type;
+}
+
+/****************************************************************************************************
+ * \fn NetAnswerGetSettings::AcquisitionType getAcquisitionMode() const
+ * \brief  get the acquisition mode
+ * \param  none
+ * \return acquisition mode
+ ****************************************************************************************************/
+NetAnswerGetSettings::AcquisitionMode CameraControl::getAcquisitionMode() const
+{
+    return m_acquisition_mode;
 }
 
 /****************************************************************************************************
@@ -845,6 +879,7 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
     DEB_MEMBER_FUNCT();
 
     out_packet = NULL;
+    out_error  = 0   ;
 
     // at start, we do not know the kind of packet.
     // we can only receive the generic header to determine the packet type.
@@ -888,13 +923,6 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
 
         // it's ok, we can "return" the packet
         out_packet = new NetAcknowledge();
-
-        if(!FillFullPacket(out_packet, net_buffer, out_error))
-        {
-            delete out_packet;
-            out_packet = NULL;
-            return false;
-        }
     }
     else
     // check if this is a data packet
@@ -910,19 +938,16 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
     #endif
 
         // checking the error code
+    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
         if(answer.m_error_code)
         {
-        #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
             DEB_TRACE() << "received an error into the " << out_packet->m_packet_name << " packet.";
-        #endif
-
-            out_error = answer.m_error_code;
-            return false;
         }
+    #endif
 
         // checking the data type to determine the final class to use
         // status
-        if(answer.m_data_type == NetGenericAnswer::g_data_type_get_status)
+        if(answer.isGetStatusPacket())
         {
             NetAnswerGetStatus get_status;
 
@@ -931,17 +956,10 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
 
             // it's ok, we can "return" the packet
             out_packet = new NetAnswerGetStatus();
-
-            if(!FillFullPacket(out_packet, net_buffer, out_error))
-            {
-                delete out_packet;
-                out_packet = NULL;
-                return false;
-            }
         }
         else
         // camera parameters
-        if(answer.m_data_type == NetGenericAnswer::g_data_type_get_camera_parameters)
+        if(answer.isGetCameraParameters())
         {
             NetAnswerGetCameraParameters get_params;
 
@@ -954,17 +972,10 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
 
             // it's ok, we can "return" the packet
             out_packet = new NetAnswerGetCameraParameters();
-
-            if(!FillFullPacket(out_packet, net_buffer, out_error))
-            {
-                delete out_packet;
-                out_packet = NULL;
-                return false;
-            }
         }
         else
         // settings
-        if(answer.m_data_type == NetGenericAnswer::g_data_type_get_settings)
+        if(answer.isGetSettings())
         {
             NetAnswerGetSettings get_settings;
 
@@ -977,11 +988,51 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
 
             // it's ok, we can "return" the packet
             out_packet = new NetAnswerGetSettings();
+        }
+        else
+        // command done
+        if(answer.isCommandDonePacket())
+        {
+            NetAnswerCommandDone command_done;
 
-            if(!FillFullPacket(out_packet, net_buffer, out_error))
+            if(!receiveSpecificSubPacket(header, answer, &command_done,  net_buffer, out_error))
+                return false;
+
+        #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
+            command_done.log();
+        #endif
+
+            // check the function type
+            // set acquisition mode
+            if(command_done.m_function_number == NetCommandHeader::g_function_number_set_acquisition_mode)
             {
-                delete out_packet;
-                out_packet = NULL;
+                // it's ok, we can "return" the packet
+                out_packet = new NetAnswerSetAcquisitionMode();
+            }
+            else
+            // set exposure time
+            if(command_done.m_function_number == NetCommandHeader::g_function_number_set_exposure_time)
+            {
+                // it's ok, we can "return" the packet
+                out_packet = new NetAnswerSetExposureTime();
+            }
+            else
+            // set format parameters
+            if(command_done.m_function_number == NetCommandHeader::g_function_number_set_format_parameters)
+            {
+                // it's ok, we can "return" the packet
+                out_packet = new NetAnswerSetFormatParameters();
+            }
+            else
+            // set acquisition type
+            if(command_done.m_function_number == NetCommandHeader::g_function_number_set_acquisition_type)
+            {
+                // it's ok, we can "return" the packet
+                out_packet = new NetAnswerSetAcquisitionType();
+            }
+            else
+            {
+                DEB_ERROR() << "CameraControl::receivePacket - Unknown command done function type!";
                 return false;
             }
         }
@@ -1004,9 +1055,24 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
         return false;
     }
     
-    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
-        DEB_TRACE() << "received " << out_packet->m_packet_name << " packet.";
-    #endif
+    // it's ok, we can fill the packet
+#ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
+    if(out_packet == NULL)
+    {
+        DEB_TRACE() << "CameraControl::receivePacket - out_packet should not be NULL!";
+    }
+#endif
+
+    if(!FillFullPacket(out_packet, net_buffer, out_error))
+    {
+        delete out_packet;
+        out_packet = NULL;
+        return false;
+    }
+
+#ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
+    DEB_TRACE() << "received " << out_packet->m_packet_name << " packet.";
+#endif
 
     return true;
 }
@@ -1032,8 +1098,18 @@ void CameraControl::addPacket(NetGenericHeader * in_packet)
     else
     if(in_packet->isDataPacket())
     {
-        NetGenericAnswer * packet = dynamic_cast<NetGenericAnswer *>(in_packet);
-        group_id = packet->m_data_type;
+        NetGenericAnswer * generic_answer = dynamic_cast<NetGenericAnswer *>(in_packet);
+
+        // check if this is a commamd done packet
+        if(generic_answer->isCommandDonePacket())
+        {
+            NetAnswerCommandDone * command_done = dynamic_cast<NetAnswerCommandDone *>(generic_answer);
+            group_id = command_done->m_function_number;
+        }
+        else
+        {
+            group_id = generic_answer->m_data_type;
+        }
     }
     else
     {
@@ -1075,11 +1151,16 @@ bool CameraControl::waitPacket(NetPacketsGroupId in_group_id, NetGenericHeader *
         return false;
     }
 
-    group->waiting_while_empty();
-
-    if(!group->empty())
+    if(group->waiting_while_empty())
     {
-        out_packet = group->take();
+        if(!group->empty())
+        {
+            out_packet = group->take();
+        }
+        else
+        {
+            DEB_ERROR() << "CameraControl::waitPacket - Incorrect behaviour for the group " << (int)in_group_id;
+        }
     }
 
     return (out_packet != NULL);
@@ -1117,6 +1198,18 @@ bool CameraControl::waitImagePacket(NetGenericHeader * & out_packet)
 bool CameraControl::waitDataPacket(uint16_t in_data_type, NetGenericHeader * & out_packet)
 {
     return waitPacket(in_data_type, out_packet);
+}
+
+/****************************************************************************************************
+ * \fn bool waitCommandDonePacket(NetGenericHeader * & out_packet)
+ * \brief  Wait for a new command done packet to be received
+ * \param  in_function_number function number relative to the command done
+ * \param  out_packet         received packet
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::waitCommandDonePacket(uint16_t in_function_number, NetGenericHeader * & out_packet)
+{
+    return waitDataPacket(in_function_number, out_packet);
 }
 
 /**************************************************************************************************
@@ -1338,40 +1431,44 @@ bool CameraControl::updateStatus()
 
     // we need to manage the status data 
     status_packet = dynamic_cast<NetAnswerGetStatus *>(second_packet);
-    status        = status_packet->m_value;
 
-    if(!findLineWithKey(status, NetAnswerGetStatus::g_server_flags_status_name, line))
-        goto done;
-
-    if(!getSubString(line, NetAnswerGetStatus::g_server_flags_value_position, 
-                     NetAnswerGetStatus::g_server_flags_delimiter, sub_string))
-        goto done;
-
-    if(!convertStringToInt(sub_string, status_value))
-        goto done;
-
-//std::cout << "!!!!!!status_value: " <<status_value<< std::endl;
-
-    // conversion of the hardware status to a detector status
-    new_status = DetectorStatus::Fault;
-
-    if(status_value & NetAnswerGetStatus::HardwareStatus::CameraConnected)
+    if(!status_packet->hasError())
     {
-        if(!(status_value & NetAnswerGetStatus::HardwareStatus::ConfigurationError))
+        status = status_packet->m_value;
+
+        if(!findLineWithKey(status, NetAnswerGetStatus::g_server_flags_status_name, line))
+            goto done;
+
+        if(!getSubString(line, NetAnswerGetStatus::g_server_flags_value_position, 
+                         NetAnswerGetStatus::g_server_flags_delimiter, sub_string))
+            goto done;
+
+        if(!convertStringToInt(sub_string, status_value))
+            goto done;
+
+    //std::cout << "!!!!!!status_value: " <<status_value<< std::endl;
+
+        // conversion of the hardware status to a detector status
+        new_status = DetectorStatus::Fault;
+
+        if(status_value & NetAnswerGetStatus::HardwareStatus::CameraConnected)
         {
-            if(status_value & NetAnswerGetStatus::HardwareStatus::AcquisitionInProgress)
+            if(!(status_value & NetAnswerGetStatus::HardwareStatus::ConfigurationError))
             {
-                new_status = DetectorStatus::Exposure;
-            }
-            else
-            {
-                new_status = DetectorStatus::Ready;
+                if(status_value & NetAnswerGetStatus::HardwareStatus::AcquisitionInProgress)
+                {
+                    new_status = DetectorStatus::Exposure;
+                }
+                else
+                {
+                    new_status = DetectorStatus::Ready;
+                }
             }
         }
-    }
 
-    m_latest_status = new_status;
-    result          = true      ;
+        m_latest_status = new_status;
+        result          = true      ;
+    }
 
 done:
     if(second_packet == NULL) delete second_packet;
@@ -1412,79 +1509,83 @@ bool CameraControl::initCameraParameters()
 
     // we need to manage the data 
     params_packet = dynamic_cast<NetAnswerGetCameraParameters *>(second_packet);
-    values        = params_packet->m_value;
 
-    // get the model
-    if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_factory_name,
-                                   NetAnswerGetCameraParameters::g_server_flags_instrument_model_name,
-                                   NetAnswerGetCameraParameters::g_server_flags_delimiter,
-                                   line))
-        goto done;
+    if(!params_packet->hasError())
+    {
+        values = params_packet->m_value;
 
-    if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position, 
-                     NetAnswerGetCameraParameters::g_server_flags_delimiter, m_model))
-        goto done;
+        // get the model
+        if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_factory_name,
+                                       NetAnswerGetCameraParameters::g_server_flags_instrument_model_name,
+                                       NetAnswerGetCameraParameters::g_server_flags_delimiter,
+                                       line))
+            goto done;
 
-    // get the serial number
-    if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_factory_name,
-                                   NetAnswerGetCameraParameters::g_server_flags_instrument_serial_number_name,
-                                   NetAnswerGetCameraParameters::g_server_flags_delimiter,
-                                   line))
-        goto done;
+        if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position, 
+                         NetAnswerGetCameraParameters::g_server_flags_delimiter, m_model))
+            goto done;
 
-    if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position,
-                     NetAnswerGetCameraParameters::g_server_flags_delimiter, m_serial_number))
-        goto done;
+        // get the serial number
+        if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_factory_name,
+                                       NetAnswerGetCameraParameters::g_server_flags_instrument_serial_number_name,
+                                       NetAnswerGetCameraParameters::g_server_flags_delimiter,
+                                       line))
+            goto done;
 
-    // get the serial size
-    if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_factory_name,
-                                   NetAnswerGetCameraParameters::g_server_flags_instrument_serial_size_name,
-                                   NetAnswerGetCameraParameters::g_server_flags_delimiter,
-                                   line))
-        goto done;
+        if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position,
+                         NetAnswerGetCameraParameters::g_server_flags_delimiter, m_serial_number))
+            goto done;
 
-    if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position,
-                     NetAnswerGetCameraParameters::g_server_flags_delimiter, sub_string))
-        goto done;
+        // get the serial size
+        if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_factory_name,
+                                       NetAnswerGetCameraParameters::g_server_flags_instrument_serial_size_name,
+                                       NetAnswerGetCameraParameters::g_server_flags_delimiter,
+                                       line))
+            goto done;
 
-    if(!convertStringToInt(sub_string, value))
-        goto done;
+        if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position,
+                         NetAnswerGetCameraParameters::g_server_flags_delimiter, sub_string))
+            goto done;
 
-    m_width_max = value;
+        if(!convertStringToInt(sub_string, value))
+            goto done;
 
-    // get the parallel size
-    if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_factory_name,
-                                   NetAnswerGetCameraParameters::g_server_flags_instrument_parallel_size_name,
-                                   NetAnswerGetCameraParameters::g_server_flags_delimiter,
-                                   line))
-        goto done;
+        m_width_max = value;
 
-    if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position,
-                     NetAnswerGetCameraParameters::g_server_flags_delimiter, sub_string))
-        goto done;
+        // get the parallel size
+        if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_factory_name,
+                                       NetAnswerGetCameraParameters::g_server_flags_instrument_parallel_size_name,
+                                       NetAnswerGetCameraParameters::g_server_flags_delimiter,
+                                       line))
+            goto done;
 
-    if(!convertStringToInt(sub_string, value))
-        goto done;
+        if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position,
+                         NetAnswerGetCameraParameters::g_server_flags_delimiter, sub_string))
+            goto done;
 
-    m_height_max = value;
+        if(!convertStringToInt(sub_string, value))
+            goto done;
 
-    // get the parallel size
-    if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_miscellaneous_name,
-                                   NetAnswerGetCameraParameters::g_server_flags_instrument_bits_per_pixel_name,
-                                   NetAnswerGetCameraParameters::g_server_flags_delimiter,
-                                   line))
-        goto done;
+        m_height_max = value;
 
-    if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position,
-                     NetAnswerGetCameraParameters::g_server_flags_delimiter, sub_string))
-        goto done;
+        // get the parallel size
+        if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_miscellaneous_name,
+                                       NetAnswerGetCameraParameters::g_server_flags_instrument_bits_per_pixel_name,
+                                       NetAnswerGetCameraParameters::g_server_flags_delimiter,
+                                       line))
+            goto done;
 
-    if(!convertStringToInt(sub_string, value))
-        goto done;
+        if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position,
+                         NetAnswerGetCameraParameters::g_server_flags_delimiter, sub_string))
+            goto done;
 
-    m_pixel_depth = value;
+        if(!convertStringToInt(sub_string, value))
+            goto done;
 
-    result = true;
+        m_pixel_depth = value;
+
+        result = true;
+    }
 
 done:
     if(second_packet == NULL) delete second_packet;
@@ -1520,16 +1621,257 @@ bool CameraControl::updateSettings()
     // we need to manage the settings data 
     settings_packet = dynamic_cast<NetAnswerGetSettings *>(second_packet);
 
-    m_exposure_time_msec   = settings_packet->m_exposure_time_msec; 
-    m_nb_images_to_acquire = settings_packet->m_nb_images_to_acquire;
-    m_serial_origin        = settings_packet->m_serial_origin; 
-    m_serial_length        = settings_packet->m_serial_length; 
-    m_serial_binning       = settings_packet->m_serial_binning; 
-    m_parallel_origin      = settings_packet->m_parallel_origin; 
-    m_parallel_length      = settings_packet->m_parallel_length; 
-    m_parallel_binning     = settings_packet->m_parallel_binning; 
-    m_acquisition_type     = static_cast<NetAnswerGetSettings::AcquisitionType>(settings_packet->m_acquisition_type);
-    result                 = true;
+    if(!settings_packet->hasError())
+    {
+        m_exposure_time_msec   = settings_packet->m_exposure_time_msec; 
+        m_nb_images_to_acquire = settings_packet->m_nb_images_to_acquire;
+        m_serial_origin        = settings_packet->m_serial_origin; 
+        m_serial_length        = settings_packet->m_serial_length; 
+        m_serial_binning       = settings_packet->m_serial_binning; 
+        m_parallel_origin      = settings_packet->m_parallel_origin; 
+        m_parallel_length      = settings_packet->m_parallel_length; 
+        m_parallel_binning     = settings_packet->m_parallel_binning; 
+        m_acquisition_type     = static_cast<NetAnswerGetSettings::AcquisitionType>(settings_packet->m_acquisition_type);
+        m_acquisition_mode     = static_cast<NetAnswerGetSettings::AcquisitionMode>(settings_packet->m_acquisition_mode);
+        result                 = true;
+    }
+
+done:
+    if(second_packet == NULL) delete second_packet;
+    if(command       == NULL) delete command      ;
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool setExposureTimeMsec(uint32_t in_exposure_time_msec)
+ * \brief  change the exposure time by sending a command to the hardware
+ * \param  in_exposure_time_msec  exposure time in milli-seconds
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::setExposureTimeMsec(uint32_t in_exposure_time_msec)
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t                error           = 0    ;
+    bool                   result          = false;
+    NetGenericHeader     * second_packet   = NULL ;
+    NetCommandHeader     * command         = new NetCommandSetExposureTime();
+    
+    NetAnswerSetExposureTime  * answer_packet         = NULL ;
+    NetCommandSetExposureTime * command_exposure_time = dynamic_cast<NetCommandSetExposureTime *>(command);
+
+    // exposure time (in seconds this time!)
+    command_exposure_time->m_exposure_time_sec = static_cast<double>(in_exposure_time_msec) / 1000.0; 
+
+    // send the command and treat the acknowledge
+    if(!sendCommandWithAck(command, error))
+        goto done;
+
+    // wait for the command done
+    if(!waitCommandDonePacket(NetCommandHeader::g_function_number_set_exposure_time, second_packet))
+        goto done;
+
+    // we need to manage the settings data 
+    answer_packet = dynamic_cast<NetAnswerSetExposureTime *>(second_packet);
+
+    if(!answer_packet->hasError())
+    {
+        m_exposure_time_msec = in_exposure_time_msec;
+        result = true;
+    }
+
+done:
+    if(second_packet == NULL) delete second_packet;
+    if(command       == NULL) delete command      ;
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool setAcquisitionMode(NetAnswerGetSettings::AcquisitionMode in_acquisition_mode)
+ * \brief  Change the acquisition mode by sending a command to the hardware
+ * \param  in_acquisition_mode new acquisition mode
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::setAcquisitionMode(NetAnswerGetSettings::AcquisitionMode in_acquisition_mode)
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t                error           = 0    ;
+    bool                   result          = false;
+    NetGenericHeader     * second_packet   = NULL ;
+    NetCommandHeader     * command         = new NetCommandSetAcquisitionMode();
+    
+    NetAnswerSetAcquisitionMode  * answer_packet            = NULL ;
+    NetCommandSetAcquisitionMode * command_acquisition_mode = dynamic_cast<NetCommandSetAcquisitionMode *>(command);
+
+    command_acquisition_mode->m_acquisition_mode = static_cast<uint8_t>(in_acquisition_mode);
+
+    // send the command and treat the acknowledge
+    if(!sendCommandWithAck(command, error))
+        goto done;
+
+    // wait for the command done
+    if(!waitCommandDonePacket(NetCommandHeader::g_function_number_set_acquisition_mode, second_packet))
+        goto done;
+
+    // we need to manage the settings data 
+    answer_packet = dynamic_cast<NetAnswerSetAcquisitionMode *>(second_packet);
+
+    if(!answer_packet->hasError())
+    {
+        m_acquisition_mode = in_acquisition_mode;
+        result = true;
+    }
+
+done:
+    if(second_packet == NULL) delete second_packet;
+    if(command       == NULL) delete command      ;
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool setFormatParameters(std::size_t in_serial_origin, std::size_t in_serial_length, std::size_t in_serial_binning, std::size_t in_parallel_origin, std::size_t in_parallel_length, std::size_t in_parallel_binning)
+ * \brief  Change the format parameters by sending a command to the hardware
+ * \param  in_serial_origin CCD Format Serial Origin
+ * \param  in_serial_length CCD Format Serial Length
+ * \param  in_serial_binning CCD Format Serial Binning
+ * \param  in_parallel_origin CCD Format Parallel Origin
+ * \param  in_parallel_length  CCD Format Parallel Length 
+ * \param  in_parallel_binning CCD Format Parallel Binning 
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::setFormatParameters(std::size_t in_serial_origin   ,
+                                        std::size_t in_serial_length   , 
+                                        std::size_t in_serial_binning  ,
+                                        std::size_t in_parallel_origin , 
+                                        std::size_t in_parallel_length ,
+                                        std::size_t in_parallel_binning)
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t                error           = 0    ;
+    bool                   result          = false;
+    NetGenericHeader     * second_packet   = NULL ;
+    NetCommandHeader     * command         = new NetCommandSetFormatParameters();
+    
+    NetAnswerSetFormatParameters  * answer_packet            = NULL ;
+    NetCommandSetFormatParameters * command_acquisition_mode = dynamic_cast<NetCommandSetFormatParameters *>(command);
+
+    command_acquisition_mode->m_serial_origin    = static_cast<int32_t>(in_serial_origin   ); // CCD Format Serial Origin
+    command_acquisition_mode->m_serial_length    = static_cast<int32_t>(in_serial_length   ); // CCD Format Serial Length
+    command_acquisition_mode->m_serial_binning   = static_cast<int32_t>(in_serial_binning  ); // CCD Format Serial Binning
+    command_acquisition_mode->m_parallel_origin  = static_cast<int32_t>(in_parallel_origin ); // CCD Format Parallel Origin
+    command_acquisition_mode->m_parallel_length  = static_cast<int32_t>(in_parallel_length ); // CCD Format Parallel Length
+    command_acquisition_mode->m_parallel_binning = static_cast<int32_t>(in_parallel_binning); // CCD Format Parallel Binning
+
+    // send the command and treat the acknowledge
+    if(!sendCommandWithAck(command, error))
+        goto done;
+
+    // wait for the command done
+    if(!waitCommandDonePacket(NetCommandHeader::g_function_number_set_format_parameters, second_packet))
+        goto done;
+
+    // we need to manage the settings data 
+    answer_packet = dynamic_cast<NetAnswerSetFormatParameters *>(second_packet);
+
+    if(!answer_packet->hasError())
+    {
+        m_serial_origin    = in_serial_origin   ;
+        m_serial_length    = in_serial_length   ;
+        m_serial_binning   = in_serial_binning  ;
+        m_parallel_origin  = in_parallel_origin ;
+        m_parallel_length  = in_parallel_length ;
+        m_parallel_binning = in_parallel_binning;
+
+        result = true;
+    }
+
+done:
+    if(second_packet == NULL) delete second_packet;
+    if(command       == NULL) delete command      ;
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool setBinning(std::size_t in_serial_binning, std::size_t in_parallel_binning)
+ * \brief  Change the binning by sending a command to the hardware
+ * \param  in_serial_binning CCD Format Serial Binning
+ * \param  in_parallel_binning CCD Format Parallel Binning 
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::setBinning(std::size_t in_serial_binning, std::size_t in_parallel_binning)
+{
+    return setFormatParameters(m_serial_origin    ,
+                               m_serial_length    , 
+                               in_serial_binning  ,
+                               m_parallel_origin  , 
+                               m_parallel_length  ,
+                               in_parallel_binning);
+}
+
+/****************************************************************************************************
+ * \fn bool setRoi()
+ * \brief  Change the roi by sending a command to the hardware
+ * \param  in_serial_origin   CCD Format Serial Origin
+ * \param  in_parallel_origin CCD Format Parallel Origin
+ * \param  in_serial_length   CCD Format Serial Length
+ * \param  in_parallel_length CCD Format Parallel Length 
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::setRoi(std::size_t in_serial_origin  ,
+                           std::size_t in_parallel_origin, 
+                           std::size_t in_serial_length  ,
+                           std::size_t in_parallel_length)
+{
+    return setFormatParameters(in_serial_origin  ,
+                               in_serial_length  , 
+                               m_serial_binning  ,
+                               in_parallel_origin, 
+                               in_parallel_length,
+                               m_parallel_binning);
+}
+
+/****************************************************************************************************
+ * \fn bool setAcquisitionType(NetAnswerGetSettings::AcquisitionType in_acquisition_type)
+ * \brief  Change the acquisition type by sending a command to the hardware
+ * \param  in_acquisition_type new acquisition type
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::setAcquisitionType(NetAnswerGetSettings::AcquisitionType in_acquisition_type)
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t                error           = 0    ;
+    bool                   result          = false;
+    NetGenericHeader     * second_packet   = NULL ;
+    NetCommandHeader     * command         = new NetCommandSetAcquisitionType();
+    
+    NetAnswerSetAcquisitionType  * answer_packet            = NULL ;
+    NetCommandSetAcquisitionType * command_acquisition_type = dynamic_cast<NetCommandSetAcquisitionType *>(command);
+
+    command_acquisition_type->m_acquisition_type = static_cast<uint8_t>(in_acquisition_type);
+
+    // send the command and treat the acknowledge
+    if(!sendCommandWithAck(command, error))
+        goto done;
+
+    // wait for the command done
+    if(!waitCommandDonePacket(NetCommandHeader::g_function_number_set_acquisition_type, second_packet))
+        goto done;
+
+    // we need to manage the settings data 
+    answer_packet = dynamic_cast<NetAnswerSetAcquisitionType *>(second_packet);
+
+    if(!answer_packet->hasError())
+    {
+        m_acquisition_type = in_acquisition_type;
+        result = true;
+    }
 
 done:
     if(second_packet == NULL) delete second_packet;
@@ -1542,14 +1884,23 @@ done:
  * SINGLETON MANAGEMENT
  **************************************************************************************************/
 /****************************************************************************************************
- * \fn void create()
+ * \fn void create(int in_camera_identifier, int in_connection_timeout_sec, int in_reception_timeout_sec, int in_wait_packet_timeout_sec)
  * \brief  Create the singleton instance
- * \param  none
+ * \param  in_camera_identifier camera identifier
+ * \param  in_connection_timeout_sec  connection timeout in seconds
+ * \param  in_reception_timeout_sec   reception timeout in seconds
+ * \param  in_wait_packet_timeout_sec wait packet timeout in seconds
  * \return none
  ****************************************************************************************************/
-void CameraControl::create()
+void CameraControl::create(int in_camera_identifier      ,
+                           int in_connection_timeout_sec ,
+                           int in_reception_timeout_sec  ,
+                           int in_wait_packet_timeout_sec)
 {
-    init(new CameraControl());
+    init(new CameraControl(in_camera_identifier      ,
+                           in_connection_timeout_sec ,
+                           in_reception_timeout_sec  ,
+                           in_wait_packet_timeout_sec));
 }
 
 //###########################################################################

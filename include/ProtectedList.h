@@ -79,6 +79,9 @@ public:
     // get the list name
     const std::string & getName() const;
 
+    // set the timeout delay in seconds
+    void setDelayBeforeTimeoutSec(double in_delay_before_timeout_sec);
+
     // gets the current number of elements in the container (multi-threads protected).
     std::size_t size() const;
 
@@ -98,7 +101,7 @@ public:
     Elem * front();
 
     // waits till the container is no more empty.
-    void waiting_while_empty() const;
+    bool waiting_while_empty() const;
 
 private:
     // creates an autolock mutex for methods access
@@ -111,6 +114,10 @@ private:
   /** name of the instance (used for logs).
     */
     std::string m_name;
+
+  /** delay in seconds before a timeout.
+    */
+    double m_delay_before_timeout_sec;
 
     //------------------------------------------------------------------
     // protection stuff

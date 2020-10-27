@@ -21,80 +21,26 @@
 //###########################################################################
 
 //===================================================================================================
-// Class NetGenericAnswer
+// Class NetCommandSetFormatParameters
 //===================================================================================================
-const uint16_t NetGenericAnswer::g_data_type_get_status            = 2012;
-const uint16_t NetGenericAnswer::g_data_type_get_camera_parameters = 2010;
-const uint16_t NetGenericAnswer::g_data_type_get_settings          = 2008;
-const uint16_t NetGenericAnswer::g_data_type_command_done          = 2007;
-
 /****************************************************************************************************
- * \fn NetGenericAnswer()
+ * \fn NetCommandSetFormatParameters()
  * \brief  constructor
  * \param  none
  * \return none
  ****************************************************************************************************/
-NetGenericAnswer::NetGenericAnswer()
+NetCommandSetFormatParameters::NetCommandSetFormatParameters()
 {
-    m_error_code           = 0; // 0 = no error
-    m_data_type            = 0; // 2000 .. 2999
-    m_specific_data_lenght = 0; // 0 = no data
-    m_packet_name          = "NetGenericAnswer";
-}
+    m_function_number   = NetCommandHeader::g_function_number_set_format_parameters; // function to be executed (1000 .. 1999)
+    m_packet_name       = "Command SetFormatParameters";
+    m_is_server_command = false; // some commands are server related, others to a camera
 
-/****************************************************************************************************
- * \fn bool isCommandDonePacket()
- * \brief  check if this is a command done packet
- * \param  none
- * \return true if this is a command done packet
- ****************************************************************************************************/
-bool NetGenericAnswer::isCommandDonePacket() const
-{
-    return (m_data_type == NetGenericAnswer::g_data_type_command_done);
-}
-
-/****************************************************************************************************
- * \fn bool isGetStatusPacket()
- * \brief  check if this is a get status packet
- * \param  none
- * \return true if this is a get status packet
- ****************************************************************************************************/
-bool NetGenericAnswer::isGetStatusPacket() const
-{
-    return (m_data_type == NetGenericAnswer::g_data_type_get_status);
-}
-
-/****************************************************************************************************
- * \fn bool isGetCameraParameters()
- * \brief  check if this is a get camera parameters
- * \param  none
- * \return true if this is a get camera parameters
- ****************************************************************************************************/
-bool NetGenericAnswer::isGetCameraParameters() const
-{
-    return (m_data_type == NetGenericAnswer::g_data_type_get_camera_parameters);
-}
-
-/****************************************************************************************************
- * \fn bool isGetSettings()
- * \brief  check if this is a get settings
- * \param  none
- * \return true if this is a get settings
- ****************************************************************************************************/
-bool NetGenericAnswer::isGetSettings() const
-{
-    return (m_data_type == NetGenericAnswer::g_data_type_get_settings);
-}
-
-/****************************************************************************************************
- * \fn bool hasError()
- * \brief  check if there is an error
- * \param  none
- * \return true if there is an error
- ****************************************************************************************************/
-bool NetGenericAnswer::hasError() const
-{
-    return (m_error_code != 0);
+    m_serial_origin        = 0; // CCD Format Serial Origin
+    m_serial_length        = 0; // CCD Format Serial Length
+    m_serial_binning       = 0; // CCD Format Serial Binning
+    m_parallel_origin      = 0; // CCD Format Parallel Origin
+    m_parallel_length      = 0; // CCD Format Parallel Length
+    m_parallel_binning     = 0; // CCD Format Parallel Binning
 }
 
 /****************************************************************************************************
@@ -103,11 +49,14 @@ bool NetGenericAnswer::hasError() const
  * \param  none
  * \return specific packet size
  ****************************************************************************************************/
-std::size_t NetGenericAnswer::size() const
+std::size_t NetCommandSetFormatParameters::size() const
 {
-    return sizeof(m_error_code          ) + 
-           sizeof(m_data_type           ) + 
-           sizeof(m_specific_data_lenght);
+    return sizeof(m_serial_origin       ) + 
+           sizeof(m_serial_length       ) +
+           sizeof(m_serial_binning      ) + 
+           sizeof(m_parallel_origin     ) +
+           sizeof(m_parallel_length     ) +
+           sizeof(m_parallel_binning    );
 }
 
 /****************************************************************************************************
@@ -116,9 +65,9 @@ std::size_t NetGenericAnswer::size() const
  * \param  none
  * \return total packet size
  ****************************************************************************************************/
-std::size_t NetGenericAnswer::totalSize() const
+std::size_t NetCommandSetFormatParameters::totalSize() const
 {
-    return NetGenericHeader::totalSize() + NetGenericAnswer::size();
+    return NetCommandHeader::totalSize() + NetCommandSetFormatParameters::size();
 }
 
 /****************************************************************************************************
@@ -128,37 +77,43 @@ std::size_t NetGenericAnswer::totalSize() const
  * \param  in_out_memory_size size of the rest of memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetGenericAnswer::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
+bool NetCommandSetFormatParameters::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
 {
-    if(in_out_memory_size < NetGenericAnswer::size())
+    if(in_out_memory_size != NetCommandSetFormatParameters::size())
         return false;
 
-    readData(in_out_memory_data, m_error_code          );
-    readData(in_out_memory_data, m_data_type           );
-    readData(in_out_memory_data, m_specific_data_lenght);
+    readData(in_out_memory_data, m_serial_origin       );
+    readData(in_out_memory_data, m_serial_length       );
+    readData(in_out_memory_data, m_serial_binning      );
+    readData(in_out_memory_data, m_parallel_origin     );
+    readData(in_out_memory_data, m_parallel_length     );
+    readData(in_out_memory_data, m_parallel_binning    );
 
-    in_out_memory_size -= NetGenericAnswer::size();
+    in_out_memory_size -= NetCommandSetFormatParameters::size();
 
     return true;
 }
 
 /****************************************************************************************************
- * \fn bool write(uint8_t * out_memory_data, std::size_t & in_out_memory_size)
+ * \fn bool write(uint8_t * out_memory_data, std::size_t in_memory_size)
  * \brief  write the class members values into a memory block
  * \param  in_out_memory_data start of the memory block to be filled (moves to the next data block)
  * \param  in_out_memory_size size of the rest of the memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetGenericAnswer::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
+bool NetCommandSetFormatParameters::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
 {
-    if(in_out_memory_size < NetGenericAnswer::size())
+    if(in_out_memory_size < NetCommandSetFormatParameters::size())
         return false;
 
-    writeData(in_out_memory_data, m_error_code          );
-    writeData(in_out_memory_data, m_data_type           );
-    writeData(in_out_memory_data, m_specific_data_lenght);
+    writeData(in_out_memory_data, m_serial_origin       );
+    writeData(in_out_memory_data, m_serial_length       );
+    writeData(in_out_memory_data, m_serial_binning      );
+    writeData(in_out_memory_data, m_parallel_origin     );
+    writeData(in_out_memory_data, m_parallel_length     );
+    writeData(in_out_memory_data, m_parallel_binning    );
 
-    in_out_memory_size -= NetGenericAnswer::size();
+    in_out_memory_size -= NetCommandSetFormatParameters::size();
 
     return true;
 }
@@ -170,27 +125,27 @@ bool NetGenericAnswer::write(uint8_t * & in_out_memory_data, std::size_t & in_ou
  * \param  in_out_memory_size size of the rest of memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetGenericAnswer::totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
+bool NetCommandSetFormatParameters::totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
 {
-    if(!NetGenericHeader::totalRead(in_out_memory_data, in_out_memory_size))
+    if(!NetCommandHeader::totalRead(in_out_memory_data, in_out_memory_size))
         return false;
 
-    return NetGenericAnswer::read(in_out_memory_data, in_out_memory_size);
+    return NetCommandSetFormatParameters::read(in_out_memory_data, in_out_memory_size);
 }
 
 /****************************************************************************************************
- * \fn bool write(uint8_t * out_memory_data, std::size_t & in_out_memory_size)
+ * \fn bool write(uint8_t * out_memory_data, std::size_t in_out_memory_size) const
  * \brief  totally write the class members values into a memory block
  * \param  in_out_memory_data start of the memory block to be filled (moves to the next data block)
  * \param  in_out_memory_size size of the rest of the memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetGenericAnswer::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
+bool NetCommandSetFormatParameters::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
 {
-    if(!NetGenericHeader::totalWrite(in_out_memory_data, in_out_memory_size))
+    if(!NetCommandHeader::totalWrite(in_out_memory_data, in_out_memory_size))
         return false;
 
-    return NetGenericAnswer::write(in_out_memory_data, in_out_memory_size);
+    return NetCommandSetFormatParameters::write(in_out_memory_data, in_out_memory_size);
 }
 
 /****************************************************************************************************
@@ -199,12 +154,15 @@ bool NetGenericAnswer::totalWrite(uint8_t * & in_out_memory_data, std::size_t & 
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetGenericAnswer::log() const
+void NetCommandSetFormatParameters::log() const
 {
-    std::cout << "-- NetGenericAnswer content --" << std::endl;
-    std::cout << "m_error_code: " << (int)m_error_code << std::endl;
-    std::cout << "m_data_type: " << (int)m_data_type << std::endl;
-    std::cout << "m_specific_data_lenght: " << (int)m_specific_data_lenght << std::endl;
+    std::cout << "-- NetCommandSetFormatParameters content --" << std::endl;
+    std::cout << "m_serial_origin: " << m_serial_origin << std::endl;
+    std::cout << "m_serial_length: " << m_serial_length << std::endl;
+    std::cout << "m_serial_binning: " << m_serial_binning << std::endl;
+    std::cout << "m_parallel_origin: " << m_parallel_origin << std::endl;
+    std::cout << "m_parallel_length: " << m_parallel_length << std::endl;
+    std::cout << "m_parallel_binning: " << m_parallel_binning << std::endl;
 }
 
 /****************************************************************************************************
@@ -213,10 +171,10 @@ void NetGenericAnswer::log() const
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetGenericAnswer::totalLog() const
+void NetCommandSetFormatParameters::totalLog() const
 {
-    NetGenericHeader::totalLog();
-    NetGenericAnswer::log();
+    NetCommandHeader::totalLog();
+    NetCommandSetFormatParameters::log();
 }
 
 //###########################################################################

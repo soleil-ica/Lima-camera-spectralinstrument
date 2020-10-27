@@ -99,7 +99,7 @@ void Camera::setImageType(ImageType type)
 void Camera::getDetectorType(std::string& type) ///< [out] detector type
 {
     DEB_MEMBER_FUNCT();
-    type = "Spectral";
+    type = "Spectral Instruments";
 }
 
 //-----------------------------------------------------------------------------
