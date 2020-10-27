@@ -144,8 +144,18 @@ namespace Spectral
         // access the singleton (const version)
         static const Camera * getConstInstance();
 
+        // configure the data update delay in msec
+        void setDataUpdateDelayMsec(int in_data_update_delay_msec);
+
+        // get the data update delay in msec
+        int getDataUpdateDelayMsec() const;
+
+        // do an update of several detector data (status, exposure time, etc...)
+        bool updateData();
+
     //-----------------------------------------------------------------------------
 	private:
+        // execute a stop acq command
         void execStopAcq();
 
 	//-----------------------------------------------------------------------------
@@ -176,6 +186,9 @@ namespace Spectral
 
         // delay between the sending of two image part TCP/IP packets (in micro-seconds)
         unsigned long m_image_packet_delay_micro_sec;
+
+        // delay between the data update (status, exposure time, etc...) in msec
+        int m_data_update_delay_msec;
 
 		//-----------------------------------------------------------------------------
         // Constants

@@ -106,14 +106,53 @@ class CameraControl : public CameraSingleton<CameraControl>
         // get the latest hardware status
         CameraControl::DetectorStatus getLatestStatus() const;
 
+        // get the detector model
+        const std::string & getModel() const;
+
+        // get the detector serial number
+        const std::string & getSerialNumber() const;
+
+        // get the detector maximum width
+        std::size_t getWidthMax() const;
+
+        // get the detector maximum height
+        std::size_t getHeightMax() const;
+
+        // get the detector pixel depth
+        std::size_t getPixelDepth() const;
+
+        // get the exposure time in milli-seconds
+        uint32_t getExposureTimeMsec() const;
+
+        // get the number of frames to acquire
+        uint32_t getNbImagesToAcquire() const;
+
+        // get the acquisition type
+        NetAnswerGetSettings::AcquisitionType getAcquisitionType() const;
+
+        // get the CCD Format Serial Origin
+        std::size_t getSerialOrigin() const;
+
+        // get the CCD Format Serial Length
+        std::size_t getSerialLength() const;
+
+        // get the CCD Format Serial Binning
+        std::size_t getSerialBinning() const;
+
+        // get the CCD Format Parallel Origin
+        std::size_t getParallelOrigin() const;
+
+        // get the CCD Format Parallel Length
+        std::size_t getParallelLength() const;
+
+        // get the CCD Format Parallel Binning
+        std::size_t getParallelBinning() const;
+
         // connect the instance to the detector software (tcp/ip)
         void connect(const std::string & in_hostname, int in_port);
 
         // disconnect the instance of the detector software
         void disconnect(void);
-
-        // Send a command to the detector
-        bool sendCommand(NetCommandHeader * in_out_command, int32_t & out_error);
 
         // Receive a SI Image SGL II packet
         bool receivePacket(NetGenericHeader * & out_packet, int32_t & out_error);
@@ -135,6 +174,12 @@ class CameraControl : public CameraSingleton<CameraControl>
         **************************************************************************************************/
         // Update the current status by sending a command to the hardware
         bool updateStatus();
+
+        // Init some static data (model, serial number, max width, max lenght, pixel depths)
+        bool initCameraParameters();
+
+        // Update the settings by sending a command to the hardware
+        bool updateSettings();
 
        /***************************************************************************************************
         * SINGLETON MANAGEMENT
@@ -179,6 +224,9 @@ class CameraControl : public CameraSingleton<CameraControl>
         // Send a command to the detector and wait for the acknowledge
         bool sendCommandWithAck(NetCommandHeader * in_out_command, int32_t & out_error);
 
+        // Send a command to the detector and does not wait an acknowledge (only special commands)
+        bool sendCommandWithoutAck(NetCommandHeader * in_out_command, int32_t & out_error);
+
     private:
         // constructor
         explicit CameraControl();
@@ -189,14 +237,35 @@ class CameraControl : public CameraSingleton<CameraControl>
         // execute a not blocking connect
         bool notBlockingConnect(struct sockaddr_in & in_out_sa, int sock, int timeout);
 
+        // search and find a line which has the given key
+        static bool findLineWithKey(const std::string & in_lines ,
+                                    const std::string & in_key   ,
+                                    std::string       & out_line );
+
+        // Search and find a line which has the two given keys
+        static bool findLineWithTwoKey(const std::string & in_lines     ,
+                                       const std::string & in_first_key ,
+                                       const std::string & in_second_key,
+                                       const std::string & in_delimiter ,
+                                       std::string       & out_line     );
+
         // Cut a substring with a position and delimiter
         static bool getSubString(const std::string & in_string     ,
                                  std::size_t         in_pos        ,
                                  const std::string & in_delimiter  ,
                                  std::string       & out_sub_string);
 
+        // Convert a string to an integer
+        static bool convertStringToInt(const std::string & in_string, int & out_value);
+
         // Wait for a new packet to be received
         bool waitPacket(NetPacketsGroupId in_group_id, NetGenericHeader * & out_packet);
+
+        // Send a command to the detector
+        bool sendCommand(NetCommandHeader * in_out_command, int32_t & out_error);
+
+        // creates an autolock mutex for sendCommand access
+        lima::AutoMutex sendCommandLock() const;
 
     private:
         // socket for commands and answers
@@ -220,8 +289,53 @@ class CameraControl : public CameraSingleton<CameraControl>
         // latest detector status (periodically updated)
         DetectorStatus m_latest_status;
 
+        // detector model
+        std::string m_model;
+
+        // detector serial number
+        std::string m_serial_number;
+
+        // maximum width
+        std::size_t m_width_max;
+
+        // maximum height
+        std::size_t m_height_max;
+
+        // pixel depth in bits
+        std::size_t m_pixel_depth;
+
+        // exposure time in milli-seconds
+        uint32_t m_exposure_time_msec; 
+
+        // Number of Frames to Acquire
+        uint32_t m_nb_images_to_acquire;
+
+        // SI Image SGL II Acquisition Type
+        NetAnswerGetSettings::AcquisitionType m_acquisition_type;
+
+        // CCD Format Serial Origin
+        std::size_t  m_serial_origin; 
+
+        // CCD Format Serial Length
+        std::size_t  m_serial_length; 
+
+        // CCD Format Serial Binning
+        std::size_t  m_serial_binning; 
+
+        // CCD Format Parallel Origin
+        std::size_t  m_parallel_origin; 
+
+        // CCD Format Parallel Length
+        std::size_t  m_parallel_length; 
+
+        // CCD Format Parallel Binning
+        std::size_t  m_parallel_binning; 
+
         // packets container
         NetPacketsGroups m_packets_container;
+
+        // condition variable used to protect the sendCommand
+        mutable lima::Cond m_send_command_cond;
 };
 
 } // namespace Spectral

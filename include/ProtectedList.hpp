@@ -70,7 +70,7 @@ const std::string & ProtectedList<Elem>::getName() const
  * \fn template <class Elem> lima::AutoMutex ProtectedList<Elem>::accessLock() const
  * \brief  creates an autolock mutex for methods access
  * \param  none
- * \return none
+ * \return auto mutex
  ****************************************************************************************************/
 template <class Elem>
 lima::AutoMutex ProtectedList<Elem>::accessLock() const
@@ -82,7 +82,7 @@ lima::AutoMutex ProtectedList<Elem>::accessLock() const
  * \fn template <class Elem> lima::AutoMutex ProtectedList<Elem>::notEmptyLock() const
  * \brief  creates an autolock mutex for waiting till the container is not empty 
  * \param  none
- * \return none
+ * \return auto mutex
  ****************************************************************************************************/
 template <class Elem>
 lima::AutoMutex ProtectedList<Elem>::notEmptyLock() const

@@ -50,8 +50,8 @@ void Camera::setTrigMode(TrigMode mode) ///< [in] trigger mode to set
 void Camera::getTrigMode(TrigMode& mode) ///< [out] current trigger mode
 {
     DEB_MEMBER_FUNCT();
-//    mode = m_trig_mode;
-    
+//    NetAnswerGetSettings::AcquisitionType acquisition_type = CameraControl::getConstInstance()->getAcquisitionType();
+    mode = TrigMode::IntTrig;
     DEB_RETURN() << DEB_VAR1(mode);
 }
 
@@ -76,9 +76,7 @@ void Camera::setExpTime(double exp_time) ///< [in] exposure time to set
 void Camera::getExpTime(double& exp_time) ///< [out] current exposure time
 {
     DEB_MEMBER_FUNCT();
-
-//    exp_time = exposure;
-  //  DEB_RETURN() << DEB_VAR1(exp_time);
+    exp_time = static_cast<double>(CameraControl::getConstInstance()->getExposureTimeMsec());
 }
 
 //-----------------------------------------------------------------------------
@@ -101,9 +99,7 @@ void Camera::setLatTime(double lat_time) ///< [in] latency time
 void Camera::getLatTime(double& lat_time) ///< [out] current latency time
 {
     DEB_MEMBER_FUNCT();
-  
 //    lat_time = 0.0;
-    
     DEB_RETURN() << DEB_VAR1(lat_time);
 }
 
@@ -117,7 +113,7 @@ void Camera::getExposureTimeRange(double& min_expo,    ///< [out] minimum exposu
     DEB_MEMBER_FUNCT();
 
     min_expo = 0.0;
-    max_expo = 0.0;
+    max_expo = 100000.0;
 
     DEB_RETURN() << DEB_VAR2(min_expo, max_expo);
 }
@@ -132,7 +128,7 @@ void Camera::getLatTimeRange(double& min_lat, ///< [out] minimum latency
     DEB_MEMBER_FUNCT();
 
     min_lat = 0.0;
-    max_lat = 0.0;
+    max_lat = 100000.0;
 
     DEB_RETURN() << DEB_VAR2(min_lat, max_lat);
 }

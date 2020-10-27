@@ -58,5 +58,10 @@ void Camera::getRoi(Roi & hw_roi) ///< [out] Roi values
 {
     DEB_MEMBER_FUNCT();
 
+    hw_roi = Roi( static_cast<int>(CameraControl::getConstInstance()->getSerialOrigin  ()),
+                  static_cast<int>(CameraControl::getConstInstance()->getParallelOrigin()),
+                  static_cast<int>(CameraControl::getConstInstance()->getSerialLength  ()),
+                  static_cast<int>(CameraControl::getConstInstance()->getParallelLength()));
+    
     DEB_RETURN() << DEB_VAR1(hw_roi);
 }

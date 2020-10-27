@@ -57,7 +57,9 @@ NetPacketsGroups::NetPacketsGroups()
     // we should create all the needed lists which are fixed during runtime
     createGroup("acknowledge list", static_cast<NetPacketsGroupId>(NetGenericHeader::g_packet_identifier_for_acknowledge));
     createGroup("image list"      , static_cast<NetPacketsGroupId>(NetGenericHeader::g_packet_identifier_for_image));
-    createGroup("get status list" , NetGenericAnswer::g_data_type_get_status);
+    createGroup("get status list" , NetGenericAnswer::g_data_type_get_status           );
+    createGroup("get parameters"  , NetGenericAnswer::g_data_type_get_camera_parameters);
+    createGroup("get settings"    , NetGenericAnswer::g_data_type_get_settings         );
 }
 
 /****************************************************************************************************

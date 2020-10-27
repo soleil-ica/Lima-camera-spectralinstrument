@@ -30,7 +30,7 @@
 // PROJECT
 #include "SpectralCamera.h"
 #include "CameraControl.h"
-#include "CameraReceiveDataThread.h"
+#include "CameraUpdateDataThread.h"
 
 using namespace lima;
 using namespace lima::Spectral;
@@ -69,16 +69,21 @@ Camera::Camera(const std::string & connection_address          ,
 {
     DEB_CONSTRUCTOR();
 
-    const int connection_timeout_sec = 2; // 2 seconds - TODO - property or move the constant in the class
-    const int selection_timeout_sec  = 2; // 2 seconds - TODO - property or move the constant in the class
-    const int camera_identifier      = 1; // TODO? - property or move the constant in the class
+    const int connection_timeout_sec = 2   ; // 2 seconds - TODO - property or move the constant in the class
+    const int selection_timeout_sec  = 2   ; // 2 seconds - TODO - property or move the constant in the class
+    const int camera_identifier      = 1   ; // TODO? - property or move the constant in the class
+    const int data_update_delay_msec = 1000; // TODO? - property or move the constant in the class
 
     m_connection_address           = connection_address          ;
     m_connection_port              = connection_port             ;
     m_image_packet_pixels_nb       = image_packet_pixels_nb      ;
     m_image_packet_delay_micro_sec = image_packet_delay_micro_sec;
 
+    setDataUpdateDelayMsec(data_update_delay_msec);
+
     DEB_TRACE() << "Starting Spectral camera...";
+
+    // give access to the camera instance as a singleton
     g_singleton = this;
 
     // creating the camera control instance
@@ -91,13 +96,23 @@ Camera::Camera(const std::string & connection_address          ,
 
     CameraControl::getInstance()->connect(m_connection_address, m_connection_port);
 
-    // temporary...
-    Camera::Status status = getStatus();
-
-    if(0)
+    // init some data (status, exposure time, etc...)
+    if(!CameraControl::getInstance()->initCameraParameters())
     {
         THROW_HW_ERROR(Error) << "Unable to initialize the camera (Check if it is switched on or if an other software is currently using it).";
     }
+
+    // force an update of some data (status, exposure time, etc...)
+    if(!updateData())
+    {
+        THROW_HW_ERROR(Error) << "Unable to initialize the camera (Check if it is switched on or if an other software is currently using it).";
+    }
+
+    // creating the data update thread
+    CameraUpdateDataThread::create();
+    
+    // starting the data update
+    CameraUpdateDataThread::startUpdate();
 
     DEB_TRACE() << "Starting done.";
 }
@@ -113,7 +128,13 @@ Camera::~Camera()
     DEB_DESTRUCTOR();
 
     stopAcq();
-               
+
+    // Stopping the data update
+    CameraUpdateDataThread::stopUpdate();
+
+    // Releasing the data update thread
+    CameraUpdateDataThread::release();
+
     // Closing camera
     DEB_TRACE() << "Shutdown Spectral camera...";
 
@@ -185,4 +206,44 @@ Camera * Camera::getInstance()
 const Camera * Camera::getConstInstance()
 {
     return Camera::g_singleton;
+}
+
+//=============================================================================
+/****************************************************************************************************
+ * \fn bool updateData()
+ * \brief  do an update of several detector data (status, exposure time, etc...)
+ * \param  none
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool Camera::updateData()
+{
+    if(!CameraControl::getInstance()->updateStatus())
+        return false;
+
+    if(!CameraControl::getInstance()->updateSettings())
+        return false;
+
+    return true;
+}
+
+/****************************************************************************************************
+ * \fn void setDataUpdateDelayMsec(int in_data_update_delay_msec)
+ * \brief  configure the data update delay in msec
+ * \param  in_data_update_delay_msec new data update delay in msec
+ * \return none
+ ****************************************************************************************************/
+void Camera::setDataUpdateDelayMsec(int in_data_update_delay_msec)
+{
+    m_data_update_delay_msec = in_data_update_delay_msec;
+}
+
+/****************************************************************************************************
+ * \fn int getDataUpdateDelayMsec() const
+ * \brief  get the data update delay in msec
+ * \param  none
+ * \return data update delay in msec
+ ****************************************************************************************************/
+int Camera::getDataUpdateDelayMsec() const
+{
+    return m_data_update_delay_msec;
 }

@@ -239,7 +239,9 @@ protected:
     uint16_t m_specific_data_lenght; // length of parameter block following (0, if none)
     bool     m_is_server_command   ; // some commands are server related, others to a camera (used to set the m_camera_identifier member)
 
-    static uint16_t g_function_number_get_status; // to set Function number
+    static uint16_t g_function_number_get_status           ; // to set Function number
+    static uint16_t g_function_number_get_camera_parameters; // to set Function number
+    static uint16_t g_function_number_get_settings         ; // to set Function number
 };
 
 /*
@@ -253,6 +255,36 @@ class NetCommandGetStatus : public NetCommandHeader
 public:
     // constructor
     NetCommandGetStatus();
+
+protected:
+};
+
+/*
+ *  \class NetCommandGetCameraParameters
+ *  \brief This class is a Get Camera Parameters command packet class (there is no specific data for this command)
+ */
+class NetCommandGetCameraParameters : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetCommandGetCameraParameters();
+
+protected:
+};
+
+/*
+ *  \class NetCommandGetSettings
+ *  \brief This class is a Get Settings command packet class (there is no specific data for this command)
+ */
+class NetCommandGetSettings : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetCommandGetSettings();
 
 protected:
 };
@@ -355,33 +387,22 @@ protected:
     uint16_t m_data_type           ; // 2000 .. 2999
     int32_t  m_specific_data_lenght; // 0 = no data
 
-    static uint16_t g_data_type_get_status; // to check the Data type
+    static uint16_t g_data_type_get_status           ; // to check the Data type
+    static uint16_t g_data_type_get_camera_parameters; // to check the Data type
+    static uint16_t g_data_type_get_settings         ; // to check the Data type
 };
 
 /*
- *  \class NetAnswerGetStatus
- *  \brief This class is a Get Status answer packet class
+ *  \class NetAnswerGenericString
+ *  \brief This class is a generic string answer packet class
  */
-class NetAnswerGetStatus : public NetGenericAnswer
+class NetAnswerGenericString : public NetGenericAnswer
 {
     friend class CameraControl;    
 
-    // hardware status values
-    typedef enum HardwareStatus
-    {
-        CameraConnected        = 1  ,
-        AcquisitionInProgress  = 2  ,
-        WaitForTrigger         = 4  ,
-        TriggerReceived        = 8  ,
-        ServerSimulatorData    = 16 ,
-        InterfaceSimulatorData = 32 ,
-        ConfigurationLoaded    = 64 ,
-        ConfigurationError     = 128,
-
-    } HardwareStatus;
-
+public:
     // constructor
-    NetAnswerGetStatus();
+    NetAnswerGenericString();
 
     //-----------------------
     // not recursive methods
@@ -414,8 +435,48 @@ class NetAnswerGetStatus : public NetGenericAnswer
     virtual void totalLog() const;
 
 protected:
-    std::string m_status;
+    std::string m_value;
+};
 
+/*
+ *  \class NetAnswerGetStatus
+ *  \brief This class is a Get Status answer packet class
+ */
+class NetAnswerGetStatus : public NetAnswerGenericString
+{
+    friend class CameraControl;    
+
+public:
+    // hardware status values
+    typedef enum HardwareStatus
+    {
+        CameraConnected        = 1  ,
+        AcquisitionInProgress  = 2  ,
+        WaitForTrigger         = 4  ,
+        TriggerReceived        = 8  ,
+        ServerSimulatorData    = 16 ,
+        InterfaceSimulatorData = 32 ,
+        ConfigurationLoaded    = 64 ,
+        ConfigurationError     = 128,
+
+    } HardwareStatus;
+
+    // constructor
+    NetAnswerGetStatus();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
     // status name of the key to read in the complete status string returned by the detector
     static std::string g_server_flags_status_name;
 
@@ -425,6 +486,119 @@ protected:
     // position of a value in a key status (name,value,unity)
     static std::size_t g_server_flags_value_position;
 };
+
+/*
+ *  \class NetAnswerGetCameraParameters
+ *  \brief This class is a Get Camera Parameters answer packet class
+ */
+class NetAnswerGetCameraParameters : public NetAnswerGenericString
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetAnswerGetCameraParameters();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    // factory group name for keys to read
+    static std::string g_server_flags_group_factory_name;
+
+    // miscellaneous group name for keys to read
+    static std::string g_server_flags_group_miscellaneous_name;
+
+    // keys names
+    static std::string g_server_flags_instrument_model_name         ;
+    static std::string g_server_flags_instrument_serial_number_name ;
+    static std::string g_server_flags_instrument_serial_size_name   ;
+    static std::string g_server_flags_instrument_parallel_size_name ;
+    static std::string g_server_flags_instrument_bits_per_pixel_name;
+
+    // delimiter used in a key (group,name,value)
+    static std::string g_server_flags_delimiter;
+
+    // position of a value in a key (group,name,value)
+    static std::size_t g_server_flags_value_position;
+};
+
+/*
+ *  \class NetAnswerGetSettings
+ *  \brief This class is a get settings packet class
+ */
+class NetAnswerGetSettings : public NetGenericAnswer
+{
+    friend class CameraControl;    
+
+public:
+    // hardware status values
+    typedef enum AcquisitionType
+    {
+        Light     = 0,
+        Dark      = 1,
+        Triggered = 2,
+
+    } AcquisitionType;
+
+    // constructor
+    NetAnswerGetSettings();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // get the specific packet size
+    virtual std::size_t size() const;
+
+    // read the values stored into a memory block and fill them into the class members
+    virtual bool read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // write the class members values into a memory block
+    virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // get the total packet size
+    virtual std::size_t totalSize() const;
+
+    // totally read the values stored into a memory block and fill them into the class members
+    virtual bool totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // totally write the class members values into a memory block
+    virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    uint32_t m_exposure_time_msec  ; // exposure time in milli-seconds
+    uint8_t  m_readout_modes_nb    ; // Number of Readout Modes defined for the camera
+    uint8_t  m_readout_mode        ; // Current Readout Mode
+    uint32_t m_nb_images_to_average; // Number of Images to Acquire and Average
+    uint32_t m_nb_images_to_acquire; // Number of Frames to Acquire
+    uint16_t m_acquisition_mode    ; // SI Image SGL II Acquisition Mode
+    uint16_t m_acquisition_type    ; // SI Image SGL II Acquisition Type
+    int32_t  m_serial_origin       ; // CCD Format Serial Origin
+    int32_t  m_serial_length       ; // CCD Format Serial Length
+    int32_t  m_serial_binning      ; // CCD Format Serial Binning
+    int32_t  m_parallel_origin     ; // CCD Format Parallel Origin
+    int32_t  m_parallel_length     ; // CCD Format Parallel Length
+    int32_t  m_parallel_binning    ; // CCD Format Parallel Binning
+};
+
 
 } // namespace Spectral
 } // namespace lima

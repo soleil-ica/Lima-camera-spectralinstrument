@@ -53,6 +53,9 @@ void Camera::setBin(const Bin & set_bin) ///< [in] binning values objects
 void Camera::getBin(Bin & hw_bin) ///< [out] binning values object
 {
     DEB_MEMBER_FUNCT();
+    
+    hw_bin = Bin( static_cast<int>(CameraControl::getConstInstance()->getSerialBinning  ()),
+                  static_cast<int>(CameraControl::getConstInstance()->getParallelBinning()));
 
     DEB_RETURN() << DEB_VAR1(hw_bin);
 }

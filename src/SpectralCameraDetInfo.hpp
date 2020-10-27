@@ -39,8 +39,7 @@ void Camera::getPixelSize(double& sizex,    ///< [out] horizontal pixel size
 void Camera::getDetectorMaxImageSize(Size& size) ///< [out] image dimensions
 {
     DEB_MEMBER_FUNCT();
-    size = Size(0, 0);
-//    size = Size(m_max_image_width, m_max_image_height);
+    size = Size(CameraControl::getConstInstance()->getWidthMax (), CameraControl::getConstInstance()->getHeightMax());
 }
 
 //-----------------------------------------------------------------------------
@@ -49,8 +48,7 @@ void Camera::getDetectorMaxImageSize(Size& size) ///< [out] image dimensions
 void Camera::getDetectorImageSize(Size& size) ///< [out] image dimensions
 {
     DEB_MEMBER_FUNCT();
-    
-    size= Size(0, 0);
+    getDetectorMaxImageSize(size);
 
     DEB_TRACE() << "Size (" << DEB_VAR2(size.getWidth(), size.getHeight()) << ")";
 }
@@ -62,27 +60,16 @@ void Camera::getImageType(ImageType& type)
 {
     DEB_MEMBER_FUNCT();
 
-    type = Bpp16;
+    std::size_t pixel_depth = CameraControl::getConstInstance()->getPixelDepth();
 
-/*    long bits_type =  dcamex_getbitsperchannel(m_camera_handle);
-    
-    if (0 != bits_type )
+    switch( pixel_depth )
     {
-        switch( bits_type )
-        {
-            case 8 :  type = Bpp8 ; break;
-            case 16:  type = Bpp16; break;
-            case 32:  type = Bpp32; break;
-            default:
-            {
-                THROW_HW_ERROR(Error) << "No compatible image type";
-            }
-        }
+        case 16:
+            type = Bpp16;
+            break;
+        default:
+            THROW_HW_ERROR(Error) << "No compatible image type";
     }
-    else
-    {
-        THROW_HW_ERROR(Error) << "Unable to get image type.";
-    }*/
 }
 
 //-----------------------------------------------------
@@ -96,7 +83,6 @@ void Camera::setImageType(ImageType type)
     {
         case Bpp16:
         {
-            //m_depth = 16;
             break;
         }
         default:
@@ -104,7 +90,7 @@ void Camera::setImageType(ImageType type)
             break;
     }
 
-//    DEB_TRACE() << "SetImageType: " << m_depth;
+    DEB_TRACE() << "SetImageType: " << type;
 }
 
 //-----------------------------------------------------------------------------
@@ -113,8 +99,7 @@ void Camera::setImageType(ImageType type)
 void Camera::getDetectorType(std::string& type) ///< [out] detector type
 {
     DEB_MEMBER_FUNCT();
-    type = "unknown";
-//    type = m_detector_type;
+    type = "Spectral";
 }
 
 //-----------------------------------------------------------------------------
@@ -123,6 +108,8 @@ void Camera::getDetectorType(std::string& type) ///< [out] detector type
 void Camera::getDetectorModel(std::string& type) ///< [out] detector model
 {
     DEB_MEMBER_FUNCT();
-    type = "unknown";
-//    type = m_detector_model;
+
+    std::string model         = CameraControl::getConstInstance()->getModel();
+    std::string serial_number = CameraControl::getConstInstance()->getSerialNumber();
+    type = model + " (SN:" + serial_number + ")";
 }

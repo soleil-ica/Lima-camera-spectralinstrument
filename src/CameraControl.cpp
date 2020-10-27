@@ -63,10 +63,30 @@ CameraControl::CameraControl()
 {
     DEB_CONSTRUCTOR();
 
+    // default values
     m_connection_timeout_sec = 0;
     m_reception_timeout_sec  = 0;
     m_is_connected           = false;
-    m_latest_status          = DetectorStatus::Ready;
+
+    m_latest_status = DetectorStatus::Ready;
+    
+    m_model         = "Unknown Model"        ;
+    m_serial_number = "Unknown Serial Number";
+
+    m_width_max   = 0;
+    m_height_max  = 0;
+    m_pixel_depth = 0;
+
+    m_exposure_time_msec   = 0; 
+    m_nb_images_to_acquire = 0;
+    m_serial_origin        = 0; 
+    m_serial_length        = 0; 
+    m_serial_binning       = 0; 
+    m_parallel_origin      = 0; 
+    m_parallel_length      = 0; 
+    m_parallel_binning     = 0; 
+
+    m_acquisition_type = NetAnswerGetSettings::Light;
 
 	// Ignore the sigpipe we get we try to send quit to
 	// dead server in disconnect, just use error codes
@@ -138,6 +158,160 @@ void CameraControl::setCameraIdentifier(int in_camera_identifier)
 CameraControl::DetectorStatus CameraControl::getLatestStatus() const
 {
     return m_latest_status;
+}
+
+/****************************************************************************************************
+ * \fn const std::string & getModel() const
+ * \brief  get the detector model
+ * \param  none
+ * \return detector model
+ ****************************************************************************************************/
+const std::string & CameraControl::getModel() const
+{
+    return m_model;
+}
+
+/****************************************************************************************************
+ * \fn const std::string & getSerialNumber() const
+ * \brief  get the detector serial number
+ * \param  none
+ * \return detector serial number
+ ****************************************************************************************************/
+const std::string & CameraControl::getSerialNumber() const
+{
+    return m_serial_number;
+}
+
+/****************************************************************************************************
+ * \fn std::size_t getWidthMax() const
+ * \brief  get the detector maximum width
+ * \param  none
+ * \return detector maximum width
+ ****************************************************************************************************/
+std::size_t CameraControl::getWidthMax() const
+{
+    return m_width_max;
+}
+
+/****************************************************************************************************
+ * \fn std::size_t getHeightMax() const
+ * \brief  get the detector maximum height
+ * \param  none
+ * \return detector maximum height
+ ****************************************************************************************************/
+std::size_t CameraControl::getHeightMax() const
+{
+    return m_height_max;
+}
+
+/****************************************************************************************************
+ * \fn std::size_t getPixelDepth() const
+ * \brief  get the detector pixel depth
+ * \param  none
+ * \return detector pixel depth
+ ****************************************************************************************************/
+std::size_t CameraControl::getPixelDepth() const
+{
+    return m_pixel_depth;
+}
+
+/****************************************************************************************************
+ * \fn uint32_t getExposureTimeMsec() const
+ * \brief  get the exposure time in milli-seconds
+ * \param  none
+ * \return exposure time in milli-seconds
+ ****************************************************************************************************/
+uint32_t CameraControl::getExposureTimeMsec() const
+{
+    return m_exposure_time_msec;
+}
+
+/****************************************************************************************************
+ * \fn uint32_t getNbImagesToAcquire() const
+ * \brief  get the number of frames to acquire
+ * \param  none
+ * \return number of frames to acquire
+ ****************************************************************************************************/
+uint32_t CameraControl::getNbImagesToAcquire() const
+{
+    return m_nb_images_to_acquire;
+}
+
+/****************************************************************************************************
+ * \fn NetAnswerGetSettings::AcquisitionType getAcquisitionType() const
+ * \brief  get the acquisition type
+ * \param  none
+ * \return acquisition type
+ ****************************************************************************************************/
+NetAnswerGetSettings::AcquisitionType CameraControl::getAcquisitionType() const
+{
+    return m_acquisition_type;
+}
+
+/****************************************************************************************************
+ * \fn std::size_t getSerialOrigin() const
+ * \brief  get the CCD Format Serial Origin
+ * \param  none
+ * \return CCD Format Serial Origin
+ ****************************************************************************************************/
+std::size_t CameraControl::getSerialOrigin() const
+{
+    return m_serial_origin;
+}
+
+/****************************************************************************************************
+ * \fn std::size_t getSerialLength() const
+ * \brief  get the CCD Format Serial Length
+ * \param  none
+ * \return CCD Format Serial Length
+ ****************************************************************************************************/
+std::size_t CameraControl::getSerialLength() const
+{
+    return m_serial_length;
+}
+
+/****************************************************************************************************
+ * \fn std::size_t getSerialBinning() const
+ * \brief  get the CCD Format Serial Binning
+ * \param  none
+ * \return CCD Format Serial Binning
+ ****************************************************************************************************/
+std::size_t CameraControl::getSerialBinning() const
+{
+    return m_serial_binning;
+}
+
+/****************************************************************************************************
+ * \fn std::size_t getParallelOrigin() const
+ * \brief  get the CCD Format Parallel Origin
+ * \param  none
+ * \return CCD Format Parallel Origin
+ ****************************************************************************************************/
+std::size_t CameraControl::getParallelOrigin() const
+{
+    return m_parallel_origin;
+}
+
+/****************************************************************************************************
+ * \fn std::size_t getParallelLength() const
+ * \brief  get the CCD Format Parallel Length
+ * \param  none
+ * \return CCD Format Parallel Length
+ ****************************************************************************************************/
+std::size_t CameraControl::getParallelLength() const
+{
+    return m_parallel_length;
+}
+
+/****************************************************************************************************
+ * \fn std::size_t getParallelBinning() const
+ * \brief  get the CCD Format Parallel Binning
+ * \param  none
+ * \return CCD Format Parallel Binning
+ ****************************************************************************************************/
+std::size_t CameraControl::getParallelBinning() const
+{
+    return m_parallel_binning;
 }
 
 /****************************************************************************************************
@@ -428,6 +602,17 @@ bool CameraControl::send(const std::string          & in_command_name,
 }
 
 /****************************************************************************************************
+ * \fn lima::AutoMutex sendCommandLock() const
+ * \brief  creates an autolock mutex for sendCommand access
+ * \param  none
+ * \return auto mutex
+ ****************************************************************************************************/
+lima::AutoMutex CameraControl::sendCommandLock() const
+{
+    return lima::AutoMutex(m_send_command_cond.mutex());
+}
+
+/****************************************************************************************************
  * \fn bool sendCommand(NetCommandHeader * in_out_command, int32_t & out_error)
  * \brief  Send a command to the detector
  * \param  in_out_command command to send
@@ -610,7 +795,7 @@ bool CameraControl::receiveSpecificSubPacket(const NetGenericHeader & in_packet 
 
     if(!out_packet->read(memory_data, memory_size))
     {
-        DEB_ERROR() << "CameraControl::receiveSubPacket - Error during the buffer copy into the sub packet!";
+        DEB_ERROR() << "CameraControl::receiveSpecificSubPacket - Error during the buffer copy into the sub packet!";
         return false;
     }
 
@@ -736,6 +921,7 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
         }
 
         // checking the data type to determine the final class to use
+        // status
         if(answer.m_data_type == NetGenericAnswer::g_data_type_get_status)
         {
             NetAnswerGetStatus get_status;
@@ -745,6 +931,52 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
 
             // it's ok, we can "return" the packet
             out_packet = new NetAnswerGetStatus();
+
+            if(!FillFullPacket(out_packet, net_buffer, out_error))
+            {
+                delete out_packet;
+                out_packet = NULL;
+                return false;
+            }
+        }
+        else
+        // camera parameters
+        if(answer.m_data_type == NetGenericAnswer::g_data_type_get_camera_parameters)
+        {
+            NetAnswerGetCameraParameters get_params;
+
+            if(!receiveSpecificSubPacket(header, answer, &get_params,  net_buffer, out_error))
+                return false;
+
+        #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
+            get_params.log();
+        #endif
+
+            // it's ok, we can "return" the packet
+            out_packet = new NetAnswerGetCameraParameters();
+
+            if(!FillFullPacket(out_packet, net_buffer, out_error))
+            {
+                delete out_packet;
+                out_packet = NULL;
+                return false;
+            }
+        }
+        else
+        // settings
+        if(answer.m_data_type == NetGenericAnswer::g_data_type_get_settings)
+        {
+            NetAnswerGetSettings get_settings;
+
+            if(!receiveSpecificSubPacket(header, answer, &get_settings,  net_buffer, out_error))
+                return false;
+
+        #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
+            get_settings.log();
+        #endif
+
+            // it's ok, we can "return" the packet
+            out_packet = new NetAnswerGetSettings();
 
             if(!FillFullPacket(out_packet, net_buffer, out_error))
             {
@@ -891,6 +1123,24 @@ bool CameraControl::waitDataPacket(uint16_t in_data_type, NetGenericHeader * & o
  * COMMANDS MANAGEMENT
  **************************************************************************************************/
 /****************************************************************************************************
+ * \fn bool sendCommandWithoutAck(NetCommandHeader * in_out_command, int32_t & out_error)
+ * \brief  Send a command to the detector and does not wait an acknowledge (only special commands)
+ * \param  in_out_command command to send
+ * \param  out_error      error code
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::sendCommandWithoutAck(NetCommandHeader * in_out_command, int32_t & out_error)
+{
+    DEB_MEMBER_FUNCT();
+
+    // protecting the multi-threads access
+    lima::AutoMutex send_command_mutex = sendCommandLock(); 
+
+    // Send a command to the detector
+    return sendCommand(in_out_command, out_error);
+}
+
+/****************************************************************************************************
  * \fn bool sendCommandWithAck(NetCommandHeader * in_out_command, int32_t & out_error)
  * \brief  Send a command to the detector and wait for the acknowledge
  * \param  in_out_command command to send
@@ -900,6 +1150,9 @@ bool CameraControl::waitDataPacket(uint16_t in_data_type, NetGenericHeader * & o
 bool CameraControl::sendCommandWithAck(NetCommandHeader * in_out_command, int32_t & out_error)
 {
     DEB_MEMBER_FUNCT();
+
+    // protecting the multi-threads access
+    lima::AutoMutex send_command_mutex = sendCommandLock(); 
 
     bool               result       = false;
     NetGenericHeader * first_packet = NULL ;
@@ -933,6 +1186,57 @@ done:
         delete first_packet ;
 
     return result;
+}
+
+/****************************************************************************************************
+ * \fn bool findLineWithKey(const std::string & in_lines, const std::string & in_key, std::string & out_line)
+ * \brief  Search and find a line which has the given key
+ * \param  in_lines source string which contains the lines
+ * \param  in_key    key to search in the lines
+ * \param  out_line  found line
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::findLineWithKey(const std::string & in_lines ,
+                                    const std::string & in_key   ,
+                                    std::string       & out_line )
+{
+    std::string line;
+    bool result = false;
+
+    std::istringstream iss(in_lines);
+
+    while (std::getline(iss, line))
+    {
+        // search the status key
+        if (line.find(in_key) != std::string::npos) 
+        {
+            out_line = line;
+            result   = true;
+            break;
+        }
+    }
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool findLineWithTwoKey(const std::string & in_lines, const std::string & in_first_key, const std::string & in_second_key, const std::string & in_delimiter, std::string & out_line)
+ * \brief  Search and find a line which has the two given keys
+ * \param  in_lines source string which contains the lines
+ * \param  in_first_key  first key to search in the lines
+ * \param  in_second_key second key to search in the lines
+ * \param  in_pos        substring delimiter
+ * \param  out_line      found line
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::findLineWithTwoKey(const std::string & in_lines     ,
+                                       const std::string & in_first_key ,
+                                       const std::string & in_second_key,
+                                       const std::string & in_delimiter ,
+                                       std::string       & out_line     )
+{
+    std::string key = in_first_key + in_delimiter + in_second_key;
+    return findLineWithKey(in_lines, key, out_line);
 }
 
 /****************************************************************************************************
@@ -976,6 +1280,34 @@ bool CameraControl::getSubString(const std::string & in_string     ,
 }
 
 /****************************************************************************************************
+ * \fn bool bool convertStringToInt(const std::string & in_string, int & out_value)
+ * \brief  Convert a string to an integer
+ * \param  in_string source string
+ * \param  out_value converted integer value
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::convertStringToInt(const std::string & in_string, int & out_value)
+{
+    bool        result;
+    std::string sub_string;
+
+    std::istringstream ss(in_string);
+    ss >> out_value;
+
+    if (ss.fail() || (ss.rdbuf()->in_avail() > 0))
+    {
+        ss.clear();
+        result = false;
+    }
+    else
+    {
+        result = true;
+    }
+
+    return result;
+}
+
+/****************************************************************************************************
  * \fn bool CameraControl::updateStatus()
  * \brief  Update the current status by sending a command to the hardware
  * \param  none
@@ -985,10 +1317,16 @@ bool CameraControl::updateStatus()
 {
     DEB_MEMBER_FUNCT();
 
-    int32_t            error         = 0    ;
-    bool               result        = false;
-    NetGenericHeader * second_packet = NULL ;
-    NetCommandHeader * command       = new NetCommandGetStatus();
+    std::string          status        ;
+    int                  status_value  ;
+    std::string          line          ;
+    std::string          sub_string    ;
+    DetectorStatus       new_status    ;
+    int32_t              error         = 0    ;
+    bool                 result        = false;
+    NetAnswerGetStatus * status_packet = NULL ;
+    NetGenericHeader   * second_packet = NULL ;
+    NetCommandHeader   * command       = new NetCommandGetStatus();
 
     // send the command and treat the acknowledge
     if(!sendCommandWithAck(command, error))
@@ -999,66 +1337,199 @@ bool CameraControl::updateStatus()
         goto done;
 
     // we need to manage the status data 
+    status_packet = dynamic_cast<NetAnswerGetStatus *>(second_packet);
+    status        = status_packet->m_value;
+
+    if(!findLineWithKey(status, NetAnswerGetStatus::g_server_flags_status_name, line))
+        goto done;
+
+    if(!getSubString(line, NetAnswerGetStatus::g_server_flags_value_position, 
+                     NetAnswerGetStatus::g_server_flags_delimiter, sub_string))
+        goto done;
+
+    if(!convertStringToInt(sub_string, status_value))
+        goto done;
+
+//std::cout << "!!!!!!status_value: " <<status_value<< std::endl;
+
+    // conversion of the hardware status to a detector status
+    new_status = DetectorStatus::Fault;
+
+    if(status_value & NetAnswerGetStatus::HardwareStatus::CameraConnected)
     {
-        NetAnswerGetStatus * status_packet = dynamic_cast<NetAnswerGetStatus *>(second_packet);
-
-        int status_value;
-
-        std::string line   ;
-        std::string status = status_packet->m_status;
-        
-        std::istringstream iss(status);
-
-        while (std::getline(iss, line))
+        if(!(status_value & NetAnswerGetStatus::HardwareStatus::ConfigurationError))
         {
-            // search the status key
-            if (line.find(NetAnswerGetStatus::g_server_flags_status_name) != std::string::npos) 
+            if(status_value & NetAnswerGetStatus::HardwareStatus::AcquisitionInProgress)
             {
-                std::string sub_string;
-
-                if(!getSubString(line, NetAnswerGetStatus::g_server_flags_value_position, 
-                                 NetAnswerGetStatus::g_server_flags_delimiter, sub_string))
-                {
-                    goto done;
-                }
-
-                std::istringstream ss(sub_string);
-                ss >> status_value;
-
-                if (ss.fail() || (ss.rdbuf()->in_avail() > 0))
-                {
-                    ss.clear();
-                    goto done;
-                }
-                else
-                {
-    std::cout << "!!!!!!status_value: " <<status_value<< std::endl;
-
-                    // conversion of the hardware status to a detector status
-                    DetectorStatus new_status = DetectorStatus::Fault;
-
-                    if(status_value & NetAnswerGetStatus::HardwareStatus::CameraConnected)
-                    {
-                        if(!(status_value & NetAnswerGetStatus::HardwareStatus::ConfigurationError))
-                        {
-                            if(status_value & NetAnswerGetStatus::HardwareStatus::AcquisitionInProgress)
-                            {
-                                new_status = DetectorStatus::Exposure;
-                            }
-                            else
-                            {
-                                new_status = DetectorStatus::Ready;
-                            }
-                        }
-                    }
-
-                    m_latest_status = new_status;
-                    result          = true      ;
-                    break;
-                }
+                new_status = DetectorStatus::Exposure;
+            }
+            else
+            {
+                new_status = DetectorStatus::Ready;
             }
         }
     }
+
+    m_latest_status = new_status;
+    result          = true      ;
+
+done:
+    if(second_packet == NULL) delete second_packet;
+    if(command       == NULL) delete command      ;
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool CameraControl::initCameraParameters()
+ * \brief  Init some static data (model, serial number, max width, max lenght, pixel depths)
+ * \param  none
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::initCameraParameters()
+{
+    DEB_MEMBER_FUNCT();
+
+    NetAnswerGetCameraParameters * params_packet = NULL;
+
+    int32_t            error         = 0    ;
+    bool               result        = false;
+    NetGenericHeader * second_packet = NULL ;
+    NetCommandHeader * command       = new NetCommandGetCameraParameters();
+
+    std::string        values    ;
+    int                value     ;
+    std::string        line      ;
+    std::string        sub_string;
+
+    // send the command and treat the acknowledge
+    if(!sendCommandWithAck(command, error))
+        goto done;
+
+    // wait for the status
+    if(!waitDataPacket(NetGenericAnswer::g_data_type_get_camera_parameters, second_packet))
+        goto done;
+
+    // we need to manage the data 
+    params_packet = dynamic_cast<NetAnswerGetCameraParameters *>(second_packet);
+    values        = params_packet->m_value;
+
+    // get the model
+    if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_factory_name,
+                                   NetAnswerGetCameraParameters::g_server_flags_instrument_model_name,
+                                   NetAnswerGetCameraParameters::g_server_flags_delimiter,
+                                   line))
+        goto done;
+
+    if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position, 
+                     NetAnswerGetCameraParameters::g_server_flags_delimiter, m_model))
+        goto done;
+
+    // get the serial number
+    if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_factory_name,
+                                   NetAnswerGetCameraParameters::g_server_flags_instrument_serial_number_name,
+                                   NetAnswerGetCameraParameters::g_server_flags_delimiter,
+                                   line))
+        goto done;
+
+    if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position,
+                     NetAnswerGetCameraParameters::g_server_flags_delimiter, m_serial_number))
+        goto done;
+
+    // get the serial size
+    if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_factory_name,
+                                   NetAnswerGetCameraParameters::g_server_flags_instrument_serial_size_name,
+                                   NetAnswerGetCameraParameters::g_server_flags_delimiter,
+                                   line))
+        goto done;
+
+    if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position,
+                     NetAnswerGetCameraParameters::g_server_flags_delimiter, sub_string))
+        goto done;
+
+    if(!convertStringToInt(sub_string, value))
+        goto done;
+
+    m_width_max = value;
+
+    // get the parallel size
+    if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_factory_name,
+                                   NetAnswerGetCameraParameters::g_server_flags_instrument_parallel_size_name,
+                                   NetAnswerGetCameraParameters::g_server_flags_delimiter,
+                                   line))
+        goto done;
+
+    if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position,
+                     NetAnswerGetCameraParameters::g_server_flags_delimiter, sub_string))
+        goto done;
+
+    if(!convertStringToInt(sub_string, value))
+        goto done;
+
+    m_height_max = value;
+
+    // get the parallel size
+    if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_miscellaneous_name,
+                                   NetAnswerGetCameraParameters::g_server_flags_instrument_bits_per_pixel_name,
+                                   NetAnswerGetCameraParameters::g_server_flags_delimiter,
+                                   line))
+        goto done;
+
+    if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position,
+                     NetAnswerGetCameraParameters::g_server_flags_delimiter, sub_string))
+        goto done;
+
+    if(!convertStringToInt(sub_string, value))
+        goto done;
+
+    m_pixel_depth = value;
+
+    result = true;
+
+done:
+    if(second_packet == NULL) delete second_packet;
+    if(command       == NULL) delete command      ;
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool CameraControl::updateSettings()
+ * \brief  Update the settings by sending a command to the hardware
+ * \param  none
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::updateSettings()
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t                error           = 0    ;
+    bool                   result          = false;
+    NetAnswerGetSettings * settings_packet = NULL ;
+    NetGenericHeader     * second_packet   = NULL ;
+    NetCommandHeader     * command         = new NetCommandGetSettings();
+
+    // send the command and treat the acknowledge
+    if(!sendCommandWithAck(command, error))
+        goto done;
+
+    // wait for the status
+    if(!waitDataPacket(NetGenericAnswer::g_data_type_get_settings, second_packet))
+        goto done;
+
+    // we need to manage the settings data 
+    settings_packet = dynamic_cast<NetAnswerGetSettings *>(second_packet);
+
+    m_exposure_time_msec   = settings_packet->m_exposure_time_msec; 
+    m_nb_images_to_acquire = settings_packet->m_nb_images_to_acquire;
+    m_serial_origin        = settings_packet->m_serial_origin; 
+    m_serial_length        = settings_packet->m_serial_length; 
+    m_serial_binning       = settings_packet->m_serial_binning; 
+    m_parallel_origin      = settings_packet->m_parallel_origin; 
+    m_parallel_length      = settings_packet->m_parallel_length; 
+    m_parallel_binning     = settings_packet->m_parallel_binning; 
+    m_acquisition_type     = static_cast<NetAnswerGetSettings::AcquisitionType>(settings_packet->m_acquisition_type);
+    result                 = true;
 
 done:
     if(second_packet == NULL) delete second_packet;
