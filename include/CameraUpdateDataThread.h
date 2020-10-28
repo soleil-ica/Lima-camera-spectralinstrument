@@ -124,7 +124,7 @@ private :
     //------------------------------------------------------------------
     // singleton management
     //------------------------------------------------------------------
-    static CameraUpdateDataThread * m_singleton;
+    static CameraUpdateDataThread * g_singleton;
 };
 
 } // namespace Spectral

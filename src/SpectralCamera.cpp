@@ -31,6 +31,7 @@
 #include "SpectralCamera.h"
 #include "CameraControl.h"
 #include "CameraUpdateDataThread.h"
+#include "CameraAcqThread.h"
 
 using namespace lima;
 using namespace lima::Spectral;
@@ -80,6 +81,7 @@ Camera::Camera(const std::string & connection_address          ,
     m_image_packet_pixels_nb       = image_packet_pixels_nb      ;
     m_image_packet_delay_micro_sec = image_packet_delay_micro_sec;
     m_nb_frames_to_acquire         = 0                           ;
+    m_nb_frames_acquired           = 0                           ;
     m_latency_time_msec            = 0                           ;
     m_trigger_mode                 = lima::TrigMode::IntTrig     ;
 
@@ -110,7 +112,7 @@ Camera::Camera(const std::string & connection_address          ,
     {
         THROW_HW_ERROR(Error) << "Unable to initialize the camera (Check if it is switched on or if an other software is currently using it).";
     }
-
+/*
 // change the exposure time by sending a command to the hardware
 CameraControl::getInstance()->setExposureTimeMsec(50);
 
@@ -125,14 +127,16 @@ CameraControl::getInstance()->setRoi(5, 10, 200, 400);
 
 // Change the acquisition type by sending a command to the hardware
 CameraControl::getInstance()->setAcquisitionType(NetAnswerGetSettings::AcquisitionType::Triggered);
-
-
+*/
 
     // creating the data update thread
     CameraUpdateDataThread::create();
     
     // starting the data update
     CameraUpdateDataThread::startUpdate();
+
+    // creating the acquisition thread
+    CameraAcqThread::create();
 
     DEB_TRACE() << "Starting done.";
 }
@@ -148,6 +152,12 @@ Camera::~Camera()
     DEB_DESTRUCTOR();
 
     stopAcq();
+
+    // Stopping the acquisition (if needed)
+    CameraAcqThread::stopAcq();
+
+    // Releasing the acquisition thread
+    CameraAcqThread::release();
 
     // Stopping the data update
     CameraUpdateDataThread::stopUpdate();
@@ -177,8 +187,8 @@ void Camera::execStopAcq()
     DEB_MEMBER_FUNCT();
     DEB_TRACE() << "executing StopAcq command...";
 
-    if((getStatus() != Camera::Exposure) && (getStatus() != Camera::Readout))
-        DEB_WARNING() << "Execute a stop acq command but an acquisition is not running!";
+    // Stopping the acquisition
+    CameraAcqThread::stopAcq();
 }
 
 //=============================================================================

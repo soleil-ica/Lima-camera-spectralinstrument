@@ -244,10 +244,16 @@ protected:
     static const uint16_t g_function_number_get_camera_parameters; // to set Function number
     static const uint16_t g_function_number_get_settings         ; // to set Function number
 
-    static const uint16_t g_function_number_set_acquisition_mode ;
-    static const uint16_t g_function_number_set_exposure_time    ;
-    static const uint16_t g_function_number_set_format_parameters;
-    static const uint16_t g_function_number_set_acquisition_type ;
+    static const uint16_t g_function_number_set_acquisition_mode ; // to set Function number
+    static const uint16_t g_function_number_set_exposure_time    ; // to set Function number
+    static const uint16_t g_function_number_set_format_parameters; // to set Function number
+    static const uint16_t g_function_number_set_acquisition_type ; // to set Function number
+
+    static const uint16_t g_function_number_acquire                   ; // to set Function number
+    static const uint16_t g_function_number_terminate_acquisition     ; // to set Function number
+    static const uint16_t g_function_number_retrieve_image            ; // to set Function number
+    static const uint16_t g_function_number_terminate_image_retrieve  ; // to set Function number
+    static const uint16_t g_function_number_inquire_acquisition_status; // to set Function number
 };
 
 /*
@@ -261,8 +267,6 @@ class NetCommandGetStatus : public NetCommandHeader
 public:
     // constructor
     NetCommandGetStatus();
-
-protected:
 };
 
 /*
@@ -276,8 +280,6 @@ class NetCommandGetCameraParameters : public NetCommandHeader
 public:
     // constructor
     NetCommandGetCameraParameters();
-
-protected:
 };
 
 /*
@@ -291,8 +293,6 @@ class NetCommandGetSettings : public NetCommandHeader
 public:
     // constructor
     NetCommandGetSettings();
-
-protected:
 };
 
 /*
@@ -485,6 +485,116 @@ protected:
 };
 
 /*
+ *  \class NetCommandAcquire
+ *  \brief This class is a Acquire command packet class (there is no specific data for this command)
+ */
+class NetCommandAcquire : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetCommandAcquire();
+};
+
+/*
+ *  \class NetCommandTerminateAcquisition
+ *  \brief This class is a Terminate Acquisition command packet class (there is no specific data for this command)
+ */
+class NetCommandTerminateAcquisition : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetCommandTerminateAcquisition();
+};
+
+/*
+ *  \class NetCommandTerminateImageRetrieve
+ *  \brief This class is a Terminate Image Retrieve command packet class (there is no specific data for this command)
+ */
+class NetCommandTerminateImageRetrieve : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetCommandTerminateImageRetrieve();
+
+protected:
+};
+
+/*
+ *  \class NetCommandRetrieveImage
+ *  \brief This class is a Retrieve Image packet class
+ */
+class NetCommandRetrieveImage : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+    // image transfert type values
+    typedef enum TransfertType
+    {
+        TransfertU16 = 0,
+        TransfertI16 = 1,
+        TransfertI32 = 3,
+        TransfertSGL = 4,
+
+    } TransfertType;
+
+public:
+    // constructor
+    NetCommandRetrieveImage();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // get the specific packet size
+    virtual std::size_t size() const;
+
+    // read the values stored into a memory block and fill them into the class members
+    virtual bool read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // write the class members values into a memory block
+    virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // get the total packet size
+    virtual std::size_t totalSize() const;
+
+    // totally read the values stored into a memory block and fill them into the class members
+    virtual bool totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // totally write the class members values into a memory block
+    virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    uint16_t m_transfert_type; // SI Image SGL II image transfert type
+};
+
+/*
+ *  \class NetCommandInquireAcquisitionStatus
+ *  \brief This class is a Inquire Acquisition Status command packet class (there is no specific data for this command)
+ */
+class NetCommandInquireAcquisitionStatus : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetCommandInquireAcquisitionStatus();
+};
+
+/*
  *  \class NetAcknowledge
  *  \brief This class is an acknowledge packet class
  */
@@ -559,6 +669,9 @@ public:
     // check if this is a get settings
     bool isGetSettings() const;
 
+    // check if this is an acquisition status
+    bool isAcquisitionStatus() const;
+
     // check if there is an error
     bool hasError() const;
 
@@ -601,6 +714,7 @@ protected:
     static const uint16_t g_data_type_get_camera_parameters; // to check the Data type
     static const uint16_t g_data_type_get_settings         ; // to check the Data type
     static const uint16_t g_data_type_command_done         ; // to check the Data type
+    static const uint16_t g_data_type_acquisition_status   ; // to check the Data type
 };
 
 /*
@@ -965,6 +1079,185 @@ public:
     //-----------------------
     // totally log the classes content (recursive)
     virtual void totalLog() const;
+};
+
+/*
+ *  \class NetAnswerAcquire
+ *  \brief This class is a Command Done packet class for acquire answer
+ */
+class NetAnswerAcquire : public NetAnswerCommandDone
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetAnswerAcquire();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+};
+
+/*
+ *  \class NetAnswerTerminateAcquisition
+ *  \brief This class is a Command Done packet class for terminate acquisition answer
+ */
+class NetAnswerTerminateAcquisition : public NetAnswerCommandDone
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetAnswerTerminateAcquisition();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+};
+
+/*
+ *  \class NetAnswerTerminateImageRetrieve
+ *  \brief This class is a Command Done packet class for terminate image retrieve
+ */
+class NetAnswerTerminateImageRetrieve : public NetAnswerCommandDone
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetAnswerTerminateImageRetrieve();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+};
+
+/*
+ *  \class NetAnswerAcquisitionStatus
+ *  \brief This class is an acquisition status packet class (answer for InquireAcquisitionStatus command)
+ */
+class NetAnswerAcquisitionStatus : public NetGenericAnswer
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetAnswerAcquisitionStatus();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // get the specific packet size
+    virtual std::size_t size() const;
+
+    // read the values stored into a memory block and fill them into the class members
+    virtual bool read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // write the class members values into a memory block
+    virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // get the total packet size
+    virtual std::size_t totalSize() const;
+
+    // totally read the values stored into a memory block and fill them into the class members
+    virtual bool totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // totally write the class members values into a memory block
+    virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    uint16_t m_exposure_done   ; // % of the exposure time that has elapsed
+    uint16_t m_readout_done    ; // % of the readout that is complete
+    uint32_t m_readout_position; // Relative position of readout pointer
+    int32_t  m_current_image   ; // Current image being acquired
+};
+
+/*
+ *  \class NetImage
+ *  \brief This class is an image packet class
+ */
+class NetImage : public NetGenericHeader
+{
+    friend class CameraControl   ;
+    friend class NetPacketsGroups;
+
+public:
+    // constructor
+    NetImage();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // get the specific packet size
+    virtual std::size_t size() const;
+
+    // read the values stored into a memory block and fill them into the class members
+    virtual bool read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // write the class members values into a memory block
+    virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // get the total packet size
+    virtual std::size_t totalSize() const;
+
+    // totally read the values stored into a memory block and fill them into the class members
+    virtual bool totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // totally write the class members values into a memory block
+    virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    int32_t  m_error_code          ; // 0 = no error
+    uint16_t m_image_identifier    ; // a number unique to this image
+    uint16_t m_image_type          ; // 0=U16, 1=I16, 3=I32, 4=SGL
+    uint16_t m_serial_lenght       ; // number of columns in the image
+    uint16_t m_parallel_lenght     ; // number of rows in the image
+    int32_t  m_total_nb_packets    ; // total number of packets in this image
+    int32_t  m_current_packets_nb  ; // number (0..N) of currently transmitted package
+    int32_t  m_offset              ; // packet’s offset into the linear image array
+    uint32_t m_specific_data_lenght; // length of Image structure that is following in bytes
 };
 
 } // namespace Spectral

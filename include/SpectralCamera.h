@@ -191,7 +191,10 @@ namespace Spectral
         int m_data_update_delay_msec;
 
         // simulated number of frames to acquire
-        int m_nb_frames_to_acquire;
+        std::size_t m_nb_frames_to_acquire;
+
+        // simulated number of frames already acquired
+        std::size_t m_nb_frames_acquired;
 
         // latency time in milli-seconds
         uint32_t m_latency_time_msec; 

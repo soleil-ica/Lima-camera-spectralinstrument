@@ -20,14 +20,14 @@
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
 /****************************************************************************************************
- * \file   CameraReceiveDataThread.cpp
+ * \file   CameraAcqThread.cpp
  * \brief  implementation file of the receive data thread class.
  * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
- * \date   Created on October 22, 2020
+ * \date   Created on October 28, 2020
  ****************************************************************************************************/
 
 // PROJECT
-#include "CameraReceiveDataThread.h"
+#include "CameraAcqThread.h"
 #include "SpectralCamera.h"
 #include "CameraControl.h"
 
@@ -47,52 +47,52 @@ using namespace lima::Spectral;
 //------------------------------------------------------------------
 // singleton management
 //------------------------------------------------------------------
-CameraReceiveDataThread * CameraReceiveDataThread::g_singleton = NULL;
+CameraAcqThread * CameraAcqThread::g_singleton = NULL;
 
 /************************************************************************
  * \brief constructor
  ************************************************************************/
-CameraReceiveDataThread::CameraReceiveDataThread()
+CameraAcqThread::CameraAcqThread()
 {
     DEB_MEMBER_FUNCT();
-    DEB_TRACE() << "Creation of the CameraReceiveDataThread thread...";
+    DEB_TRACE() << "Creation of the CameraAcqThread thread...";
     m_force_stop = false;
 }
 
 /************************************************************************
  * \brief destructor
  ************************************************************************/
-CameraReceiveDataThread::~CameraReceiveDataThread()
+CameraAcqThread::~CameraAcqThread()
 {
     DEB_MEMBER_FUNCT();
-    DEB_TRACE() << "The CameraReceiveDataThread thread was terminated.";
+    DEB_TRACE() << "The CameraAcqThread thread was terminated.";
 }
 
 /************************************************************************
  * \brief starts the thread
  ************************************************************************/
-void CameraReceiveDataThread::start()
+void CameraAcqThread::start()
 {
     DEB_MEMBER_FUNCT();
-    DEB_TRACE() << "Starting the CameraReceiveDataThread thread...";
+    DEB_TRACE() << "Starting the CameraAcqThread thread...";
     CmdThread::start();
-    waitStatus(CameraReceiveDataThread::Idle);
+    waitStatus(CameraAcqThread::Idle);
 }
 
 /************************************************************************
  * \brief inits the thread
  ************************************************************************/
-void CameraReceiveDataThread::init()
+void CameraAcqThread::init()
 {
     DEB_MEMBER_FUNCT();
-    DEB_TRACE() << "Initing the CameraReceiveDataThread thread...";
-    setStatus(CameraReceiveDataThread::Idle);
+    DEB_TRACE() << "Initing the CameraAcqThread thread...";
+    setStatus(CameraAcqThread::Idle);
 }
 
 /************************************************************************
  * \brief aborts the thread
  ************************************************************************/
-void CameraReceiveDataThread::abort()
+void CameraAcqThread::abort()
 {
 	DEB_MEMBER_FUNCT();
     CmdThread::abort();
@@ -102,19 +102,19 @@ void CameraReceiveDataThread::abort()
  * \brief command execution
  * \param cmd command indentifier
  ************************************************************************/
-void CameraReceiveDataThread::execCmd(int cmd)
+void CameraAcqThread::execCmd(int cmd)
 {
     DEB_MEMBER_FUNCT();
-    DEB_TRACE() << "Executing a command by the CameraReceiveDataThread thread...";
+    DEB_TRACE() << "Executing a command by the CameraAcqThread thread...";
     int status = getStatus();
 
     try
     {
         switch (cmd)
         {
-            case CameraReceiveDataThread::StartReception:
-                if (status == CameraReceiveDataThread::Idle)
-                    execStartReception();
+            case CameraAcqThread::StartAcq:
+                if (status == CameraAcqThread::Idle)
+                    execStartAcq();
                 break;
 
             default:
@@ -127,61 +127,61 @@ void CameraReceiveDataThread::execCmd(int cmd)
 }
 
 /************************************************************************
- * \brief execute the stop reception command
+ * \brief execute the stop acquisition command
  ************************************************************************/
-void CameraReceiveDataThread::execStopReception()
+void CameraAcqThread::execStopAcq()
 {
     DEB_MEMBER_FUNCT();
 
-    if(getStatus() == CameraReceiveDataThread::Running)
+    if(getStatus() == CameraAcqThread::Running)
     {
-    	DEB_TRACE() << "stopping the reception...";
+    	DEB_TRACE() << "stopping the acquisition...";
 
         m_force_stop = true;
 
         // Waiting for thread to finish or to be in error
-        waitNotStatus(CameraReceiveDataThread::Running);
+        waitNotStatus(CameraAcqThread::Running);
     }
 }
 
 /************************************************************************
- * \brief execute the StartReception command
+ * \brief execute the StartAcq command
  ************************************************************************/
-void CameraReceiveDataThread::execStartReception()
+void CameraAcqThread::execStartAcq()
 {
     DEB_MEMBER_FUNCT();
-    DEB_TRACE() << "executing StartReception command...";
+    DEB_TRACE() << "executing StartAcq command...";
 
     m_force_stop = false;
 
-    // the thread is running a new reception (it frees the Camera::startReception method)
-    setStatus(CameraReceiveDataThread::Running);
+    // get the data acquisition delay in msec
+    int data_update_delay_msec = Camera::getConstInstance()->getDataUpdateDelayMsec();
 
-    // Main data reception loop
-    // m_force_stop can be set to true by the execStopReception call to abort the data reception
+    // the thread is running a new acquisition (it frees the Camera::startAcq method)
+    setStatus(CameraAcqThread::Running);
+
+    // Main acquisition loop
+    // m_force_stop can be set to true by the execStopAcq call to abort data acquisition
     // m_force_stop can be set to true also with an error hardware camera status
+    // This loop can also stops when all the images were received.
     while(!m_force_stop)
     {
-        int32_t            error;
-        NetGenericHeader * packet = NULL ;
+        Camera::getInstance()->updateData();
 
-        // wait for an acknowledge
-        if(CameraControl::getInstance()->receivePacket(packet, error))
-        {
-            CameraControl::getInstance()->addPacket(packet);
-        }
+        // wait a few mseconds
+        usleep(data_update_delay_msec * 1000);
     }
 
 /*
-setStatus(CameraReceiveDataThread::Error);
+setStatus(CameraAcqThread::Error);
 std::string error_text = "Could not stop real time acquisition!";
 manageError(error_text);
 return;*/
 
     // change the thread status only if the thread is not in error
-    if(getStatus() == CameraReceiveDataThread::Running)
+    if(getStatus() == CameraAcqThread::Running)
     {
-        setStatus(CameraReceiveDataThread::Idle);
+        setStatus(CameraAcqThread::Idle);
     }
 }
 
@@ -189,7 +189,7 @@ return;*/
  * \brief Manage an incomming error
  * \param in_error_text text which describes the error
  ************************************************************************/
-void CameraReceiveDataThread::manageError(std::string & in_error_text)
+void CameraAcqThread::manageError(std::string & in_error_text)
 {
     Event *my_event = new Event(Hardware, Event::Info, Event::Camera, Event::Default, in_error_text);
     Spectral::Camera::getInstance()->getEventCtrlObj()->reportEvent(my_event);
@@ -201,75 +201,75 @@ void CameraReceiveDataThread::manageError(std::string & in_error_text)
 /************************************************************************
  * \brief Create the thread
  ************************************************************************/
-void CameraReceiveDataThread::create()
+void CameraAcqThread::create()
 {
     // creating the camera thread
-    CameraReceiveDataThread::g_singleton = new CameraReceiveDataThread();
+    CameraAcqThread::g_singleton = new CameraAcqThread();
 
-    // starting the thread
-    CameraReceiveDataThread::g_singleton->start();
+    // starting the acquisition thread
+    CameraAcqThread::g_singleton->start();
 }
 
 /************************************************************************
  * \brief Release the thread
  ************************************************************************/
-void CameraReceiveDataThread::release()
+void CameraAcqThread::release()
 {
-    if(CameraReceiveDataThread::g_singleton != NULL)
+    if(CameraAcqThread::g_singleton != NULL)
     {
-        // stopping and aborting the thread
-        applyStopReception(false, true);
+        // stopping the acquisition and aborting the thread
+        applyStopAcq(false, true);
 
         // releasing the thread
-        delete CameraReceiveDataThread::g_singleton;
-        CameraReceiveDataThread::g_singleton = NULL;
+        delete CameraAcqThread::g_singleton;
+        CameraAcqThread::g_singleton = NULL;
     }
 }
 
 /*******************************************************************
- * \brief Starts the data reception
+ * \brief Starts the data acquisition
  *******************************************************************/
-void CameraReceiveDataThread::startReception()
+void CameraAcqThread::startAcq()
 {
-    CameraReceiveDataThread::stopReception();
+    CameraAcqThread::stopAcq();
 
-    CameraReceiveDataThread::g_singleton->sendCmd(CameraReceiveDataThread::StartReception);
-    CameraReceiveDataThread::g_singleton->waitNotStatus(CameraReceiveDataThread::Idle);
+    CameraAcqThread::g_singleton->sendCmd(CameraAcqThread::StartAcq);
+    CameraAcqThread::g_singleton->waitNotStatus(CameraAcqThread::Idle);
 }
 
 /*******************************************************************
- * \brief Stops the data reception
+ * \brief Stops the data acquisition
  *******************************************************************/
-void CameraReceiveDataThread::stopReception()
+void CameraAcqThread::stopAcq()
 {
-    if(CameraReceiveDataThread::g_singleton != NULL)
+    if(CameraAcqThread::g_singleton != NULL)
     {
         // stopping the thread and restarting the thread in case of error
-        applyStopReception(true, false);
+        applyStopAcq(true, false);
     }
 }
 
 /*******************************************************************
- * \brief Stops the data reception and abort or restart the thread 
+ * \brief Stops the data acquisition and abort or restart the thread 
  *        if it is in error. Can also abort the thread when we exit
  *        the program.
  *******************************************************************/
-void CameraReceiveDataThread::applyStopReception(bool in_restart, bool in_always_abort)
+void CameraAcqThread::applyStopAcq(bool in_restart, bool in_always_abort)
 {
-    CameraReceiveDataThread::g_singleton->execStopReception();
+    CameraAcqThread::g_singleton->execStopAcq();
 
     // thread in error
-    if(CameraReceiveDataThread::g_singleton->getStatus() == CameraReceiveDataThread::Error)
+    if(CameraAcqThread::g_singleton->getStatus() == CameraAcqThread::Error)
     {
         // aborting the thread
-        CameraReceiveDataThread::g_singleton->abort();
+        CameraAcqThread::g_singleton->abort();
 
         if(in_restart)
         {
             // releasing the thread
-            delete CameraReceiveDataThread::g_singleton;
+            delete CameraAcqThread::g_singleton;
 
-            CameraReceiveDataThread::create();
+            CameraAcqThread::create();
         }
     }
     else
@@ -277,8 +277,30 @@ void CameraReceiveDataThread::applyStopReception(bool in_restart, bool in_always
     if(in_always_abort)
     {
         // aborting the thread
-        CameraReceiveDataThread::g_singleton->abort();
+        CameraAcqThread::g_singleton->abort();
     }
+}
+
+/****************************************************************************************************
+ * \fn CameraAcqThread * getInstance()
+ * \brief  access to the singleton
+ * \param  none
+ * \return singleton
+ ****************************************************************************************************/
+CameraAcqThread * CameraAcqThread::getInstance()
+{
+    return CameraAcqThread::g_singleton;
+}
+
+/****************************************************************************************************
+ * \fn const CameraAcqThread * getConstInstance()
+ * \brief  access to the singleton (const version)
+ * \param  none
+ * \return singleton (const version)
+ ****************************************************************************************************/
+const CameraAcqThread * CameraAcqThread::getConstInstance()
+{
+    return CameraAcqThread::g_singleton;
 }
 
 //========================================================================================

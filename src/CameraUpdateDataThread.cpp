@@ -47,7 +47,7 @@ using namespace lima::Spectral;
 //------------------------------------------------------------------
 // singleton management
 //------------------------------------------------------------------
-CameraUpdateDataThread * CameraUpdateDataThread::m_singleton = NULL;
+CameraUpdateDataThread * CameraUpdateDataThread::g_singleton = NULL;
 
 /************************************************************************
  * \brief constructor
@@ -160,7 +160,7 @@ void CameraUpdateDataThread::execStartUpdate()
     // the thread is running a new update (it frees the Camera::startUpdate method)
     setStatus(CameraUpdateDataThread::Running);
 
-    // Main acquisition loop
+    // Main data update loop
     // m_force_stop can be set to true by the execStopUpdate call to abort data update
     // m_force_stop can be set to true also with an error hardware camera status
     while(!m_force_stop)
@@ -203,10 +203,10 @@ void CameraUpdateDataThread::manageError(std::string & in_error_text)
 void CameraUpdateDataThread::create()
 {
     // creating the camera thread
-    CameraUpdateDataThread::m_singleton = new CameraUpdateDataThread();
+    CameraUpdateDataThread::g_singleton = new CameraUpdateDataThread();
 
-    // starting the acquisition thread
-    CameraUpdateDataThread::m_singleton->start();
+    // starting the thread
+    CameraUpdateDataThread::g_singleton->start();
 }
 
 /************************************************************************
@@ -214,14 +214,14 @@ void CameraUpdateDataThread::create()
  ************************************************************************/
 void CameraUpdateDataThread::release()
 {
-    if(CameraUpdateDataThread::m_singleton != NULL)
+    if(CameraUpdateDataThread::g_singleton != NULL)
     {
-        // stopping the acquisition and aborting the thread
+        // stopping and aborting the thread
         applyStopUpdate(false, true);
 
         // releasing the thread
-        delete CameraUpdateDataThread::m_singleton;
-        CameraUpdateDataThread::m_singleton = NULL;
+        delete CameraUpdateDataThread::g_singleton;
+        CameraUpdateDataThread::g_singleton = NULL;
     }
 }
 
@@ -232,8 +232,8 @@ void CameraUpdateDataThread::startUpdate()
 {
     CameraUpdateDataThread::stopUpdate();
 
-    CameraUpdateDataThread::m_singleton->sendCmd(CameraUpdateDataThread::MaxThreadCmd);
-    CameraUpdateDataThread::m_singleton->waitNotStatus(CameraUpdateDataThread::Idle);
+    CameraUpdateDataThread::g_singleton->sendCmd(CameraUpdateDataThread::StartUpdate);
+    CameraUpdateDataThread::g_singleton->waitNotStatus(CameraUpdateDataThread::Idle);
 }
 
 /*******************************************************************
@@ -241,7 +241,7 @@ void CameraUpdateDataThread::startUpdate()
  *******************************************************************/
 void CameraUpdateDataThread::stopUpdate()
 {
-    if(CameraUpdateDataThread::m_singleton != NULL)
+    if(CameraUpdateDataThread::g_singleton != NULL)
     {
         // stopping the thread and restarting the thread in case of error
         applyStopUpdate(true, false);
@@ -255,18 +255,18 @@ void CameraUpdateDataThread::stopUpdate()
  *******************************************************************/
 void CameraUpdateDataThread::applyStopUpdate(bool in_restart, bool in_always_abort)
 {
-    CameraUpdateDataThread::m_singleton->execStopUpdate();
+    CameraUpdateDataThread::g_singleton->execStopUpdate();
 
     // thread in error
-    if(CameraUpdateDataThread::m_singleton->getStatus() == CameraUpdateDataThread::Error)
+    if(CameraUpdateDataThread::g_singleton->getStatus() == CameraUpdateDataThread::Error)
     {
         // aborting the thread
-        CameraUpdateDataThread::m_singleton->abort();
+        CameraUpdateDataThread::g_singleton->abort();
 
         if(in_restart)
         {
             // releasing the thread
-            delete CameraUpdateDataThread::m_singleton;
+            delete CameraUpdateDataThread::g_singleton;
 
             CameraUpdateDataThread::create();
         }
@@ -276,7 +276,7 @@ void CameraUpdateDataThread::applyStopUpdate(bool in_restart, bool in_always_abo
     if(in_always_abort)
     {
         // aborting the thread
-        CameraUpdateDataThread::m_singleton->abort();
+        CameraUpdateDataThread::g_singleton->abort();
     }
 }
 

@@ -137,24 +137,49 @@ double ntohd(double in_value)
 // packets management was splitted into several files
 //===================================================================================================
 #include "NetGenericHeader.hpp"
+
+// commands
 #include "NetCommandHeader.hpp"
+
 #include "NetCommandGetStatus.hpp"
 #include "NetCommandGetCameraParameters.hpp"
 #include "NetCommandGetSettings.hpp"
+
 #include "NetCommandSetExposureTime.hpp"
 #include "NetCommandSetFormatParameters.hpp"
 #include "NetCommandSetAcquisitionMode.hpp"
 #include "NetCommandSetAcquisitionType.hpp"
+
+#include "NetCommandAcquire.hpp"
+#include "NetCommandTerminateAcquisition.hpp"
+#include "NetCommandTerminateImageRetrieve.hpp"
+#include "NetCommandRetrieveImage.hpp"
+#include "NetCommandInquireAcquisitionStatus.hpp"
+
+// image
 #include "NetAcknowledge.hpp"
+
+// acknowledge
+#include "NetImage.hpp"
+
+// answers of get commands
 #include "NetGenericAnswer.hpp"
 #include "NetAnswerGenericString.hpp"
+
 #include "NetAnswerGetStatus.hpp"
 #include "NetAnswerGetCameraParameters.hpp"
 #include "NetAnswerGetSettings.hpp"
+
+// command done answers
 #include "NetAnswerCommandDone.hpp"
+
 #include "NetAnswerSetAcquisitionMode.hpp"
 #include "NetAnswerSetExposureTime.hpp"
 #include "NetAnswerSetFormatParameters.hpp"
 #include "NetAnswerSetAcquisitionType.hpp"
+#include "NetAnswerAcquire.hpp"
+#include "NetAnswerTerminateAcquisition.hpp"
+#include "NetAnswerTerminateImageRetrieve.hpp"
+#include "NetAnswerAcquisitionStatus.hpp"
 
 //###########################################################################

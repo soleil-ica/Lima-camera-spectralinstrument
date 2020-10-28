@@ -990,6 +990,22 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
             out_packet = new NetAnswerGetSettings();
         }
         else
+        // acuisition status
+        if(answer.isAcquisitionStatus())
+        {
+            NetAnswerAcquisitionStatus acquisition_status;
+
+            if(!receiveSpecificSubPacket(header, answer, &acquisition_status,  net_buffer, out_error))
+                return false;
+
+        #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
+            acquisition_status.log();
+        #endif
+
+            // it's ok, we can "return" the packet
+            out_packet = new NetAnswerAcquisitionStatus();
+        }
+        else
         // command done
         if(answer.isCommandDonePacket())
         {
@@ -1029,6 +1045,27 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
             {
                 // it's ok, we can "return" the packet
                 out_packet = new NetAnswerSetAcquisitionType();
+            }
+            else
+            // acquire
+            if(command_done.m_function_number == NetCommandHeader::g_function_number_acquire)
+            {
+                // it's ok, we can "return" the packet
+                out_packet = new NetAnswerAcquire();
+            }
+            else
+            // terminate acquisition
+            if(command_done.m_function_number == NetCommandHeader::g_function_number_terminate_acquisition)
+            {
+                // it's ok, we can "return" the packet
+                out_packet = new NetAnswerTerminateAcquisition();
+            }
+            else
+            // terminate image retrieve
+            if(command_done.m_function_number == NetCommandHeader::g_function_number_terminate_image_retrieve)
+            {
+                // it's ok, we can "return" the packet
+                out_packet = new NetAnswerTerminateImageRetrieve();
             }
             else
             {
@@ -1189,7 +1226,7 @@ bool CameraControl::waitImagePacket(NetGenericHeader * & out_packet)
 }
 
 /****************************************************************************************************
- * \fn bool waitDataPacket(NetGenericHeader * & out_packet)
+ * \fn bool waitDataPacket(uint16_t in_data_type, NetGenericHeader * & out_packet)
  * \brief  Wait for a new data packet to be received
  * \param  in_data_type data type
  * \param  out_packet   received packet
@@ -1201,7 +1238,7 @@ bool CameraControl::waitDataPacket(uint16_t in_data_type, NetGenericHeader * & o
 }
 
 /****************************************************************************************************
- * \fn bool waitCommandDonePacket(NetGenericHeader * & out_packet)
+ * \fn bool waitCommandDonePacket(uint16_t in_function_number, NetGenericHeader * & out_packet)
  * \brief  Wait for a new command done packet to be received
  * \param  in_function_number function number relative to the command done
  * \param  out_packet         received packet
@@ -1210,6 +1247,142 @@ bool CameraControl::waitDataPacket(uint16_t in_data_type, NetGenericHeader * & o
 bool CameraControl::waitCommandDonePacket(uint16_t in_function_number, NetGenericHeader * & out_packet)
 {
     return waitDataPacket(in_function_number, out_packet);
+}
+
+/****************************************************************************************************
+ * \fn bool getPacket(NetPacketsGroupId in_group_id, NetGenericHeader * & out_packet)
+ * \brief  get a new packet if there is one received
+ * \param  in_group_id type of packet
+ * \param  out_packet  received packet
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::getPacket(NetPacketsGroupId in_group_id, NetGenericHeader * & out_packet)
+{
+    DEB_MEMBER_FUNCT();
+
+    out_packet = NULL;
+
+    // search the group
+    ProtectedList<NetGenericHeader> * group = m_packets_container.searchGroup(in_group_id);
+
+    if(group == NULL)
+    {
+        DEB_ERROR() << "CameraControl::getPacket - The group " << (int)in_group_id << " is not managed!";
+        return false;
+    }
+    else
+    if(!group->empty())
+    {
+        out_packet = group->take();
+    }
+
+    return (out_packet != NULL);
+}
+
+/****************************************************************************************************
+ * \fn bool getCommandDonePacket(uint16_t in_function_number, NetGenericHeader * & out_packet)
+ * \brief  get a new command done packet if there is one received
+ * \param  in_function_number function number relative to the command done
+ * \param  out_packet         received packet
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::getCommandDonePacket(uint16_t in_function_number, NetGenericHeader * & out_packet)
+{
+    return getPacket(in_function_number, out_packet);
+}
+
+/****************************************************************************************************
+ * \fn bool getImagePacket(NetGenericHeader * & out_packet)
+ * \brief  get a new image packet if there is one received
+ * \param  out_packet  received packet
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::getImagePacket(NetGenericHeader * & out_packet)
+{
+    return getPacket(static_cast<NetPacketsGroupId>(NetGenericHeader::g_packet_identifier_for_image), out_packet);
+}
+
+/****************************************************************************************************
+ * \fn bool getAcknowledgePacket(NetGenericHeader * & out_packet)
+ * \brief  get a new ack packet if there is one received
+ * \param  out_packet  received packet
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::getAcknowledgePacket(NetGenericHeader * & out_packet)
+{
+    return getPacket(static_cast<NetPacketsGroupId>(NetGenericHeader::g_packet_identifier_for_acknowledge), out_packet);
+}
+
+/****************************************************************************************************
+ * \fn bool getDataPacket(uint16_t in_data_type, NetGenericHeader * & out_packet)
+ * \brief  get a new data packet if there is one received
+ * \param  in_data_type data type
+ * \param  out_packet   received packet
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::getDataPacket(uint16_t in_data_type, NetGenericHeader * & out_packet)
+{
+    return getPacket(in_data_type, out_packet);
+}
+
+/****************************************************************************************************
+ * \fn void flushAcknowledgePackets()
+ * \brief  flush old acknowledge packets
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void CameraControl::flushAcknowledgePackets()
+{
+    NetGenericHeader * old_packet;
+
+    while(getAcknowledgePacket(old_packet))
+    {
+    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
+        DEB_WARNING() << "Flushing old acknowledge packet!";
+    #endif
+
+        delete old_packet;
+    }
+}
+
+/****************************************************************************************************
+ * \fn void flushAcquisitionStatusPackets()
+ * \brief  flush old acquisition status packets
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void CameraControl::flushAcquisitionStatusPackets()
+{
+    NetGenericHeader * old_packet;
+
+    while(getDataPacket(NetGenericAnswer::g_data_type_acquisition_status, old_packet))
+    {
+    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
+        DEB_WARNING() << "Flushing old acquisition status packet!";
+    #endif
+
+        delete old_packet;
+    }
+}
+
+/****************************************************************************************************
+ * \fn void flushImagePackets()
+ * \brief  flush old image packets
+ * \param  none
+ * \return none
+ ****************************************************************************************************/
+void CameraControl::flushImagePackets()
+{
+    NetGenericHeader * old_packet;
+
+    while(getImagePacket(old_packet))
+    {
+    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
+        DEB_WARNING() << "Flushing old image packet!";
+    #endif
+
+        delete old_packet;
+    }
 }
 
 /**************************************************************************************************
@@ -1251,6 +1424,9 @@ bool CameraControl::sendCommandWithAck(NetCommandHeader * in_out_command, int32_
     NetGenericHeader * first_packet = NULL ;
     NetAcknowledge   * ack_packet   = NULL ;
 
+    // first flush old acknowledge packet (should not occur!)
+    flushAcknowledgePackets();
+
     // Send a command to the detector
     if(!sendCommand(in_out_command, out_error))
         goto done;
@@ -1275,7 +1451,7 @@ bool CameraControl::sendCommandWithAck(NetCommandHeader * in_out_command, int32_
     }
 
 done:
-    if(first_packet  == NULL)
+    if(first_packet != NULL)
         delete first_packet ;
 
     return result;
@@ -1446,8 +1622,6 @@ bool CameraControl::updateStatus()
         if(!convertStringToInt(sub_string, status_value))
             goto done;
 
-    //std::cout << "!!!!!!status_value: " <<status_value<< std::endl;
-
         // conversion of the hardware status to a detector status
         new_status = DetectorStatus::Fault;
 
@@ -1471,8 +1645,8 @@ bool CameraControl::updateStatus()
     }
 
 done:
-    if(second_packet == NULL) delete second_packet;
-    if(command       == NULL) delete command      ;
+    if(second_packet != NULL) delete second_packet;
+    if(command       != NULL) delete command      ;
 
     return result;
 }
@@ -1588,8 +1762,8 @@ bool CameraControl::initCameraParameters()
     }
 
 done:
-    if(second_packet == NULL) delete second_packet;
-    if(command       == NULL) delete command      ;
+    if(second_packet != NULL) delete second_packet;
+    if(command       != NULL) delete command      ;
 
     return result;
 }
@@ -1637,8 +1811,8 @@ bool CameraControl::updateSettings()
     }
 
 done:
-    if(second_packet == NULL) delete second_packet;
-    if(command       == NULL) delete command      ;
+    if(second_packet != NULL) delete second_packet;
+    if(command       != NULL) delete command      ;
 
     return result;
 }
@@ -1672,7 +1846,7 @@ bool CameraControl::setExposureTimeMsec(uint32_t in_exposure_time_msec)
     if(!waitCommandDonePacket(NetCommandHeader::g_function_number_set_exposure_time, second_packet))
         goto done;
 
-    // we need to manage the settings data 
+    // we need to manage the data 
     answer_packet = dynamic_cast<NetAnswerSetExposureTime *>(second_packet);
 
     if(!answer_packet->hasError())
@@ -1682,8 +1856,8 @@ bool CameraControl::setExposureTimeMsec(uint32_t in_exposure_time_msec)
     }
 
 done:
-    if(second_packet == NULL) delete second_packet;
-    if(command       == NULL) delete command      ;
+    if(second_packet != NULL) delete second_packet;
+    if(command       != NULL) delete command      ;
 
     return result;
 }
@@ -1716,7 +1890,7 @@ bool CameraControl::setAcquisitionMode(NetAnswerGetSettings::AcquisitionMode in_
     if(!waitCommandDonePacket(NetCommandHeader::g_function_number_set_acquisition_mode, second_packet))
         goto done;
 
-    // we need to manage the settings data 
+    // we need to manage the data 
     answer_packet = dynamic_cast<NetAnswerSetAcquisitionMode *>(second_packet);
 
     if(!answer_packet->hasError())
@@ -1726,8 +1900,8 @@ bool CameraControl::setAcquisitionMode(NetAnswerGetSettings::AcquisitionMode in_
     }
 
 done:
-    if(second_packet == NULL) delete second_packet;
-    if(command       == NULL) delete command      ;
+    if(second_packet != NULL) delete second_packet;
+    if(command       != NULL) delete command      ;
 
     return result;
 }
@@ -1775,7 +1949,7 @@ bool CameraControl::setFormatParameters(std::size_t in_serial_origin   ,
     if(!waitCommandDonePacket(NetCommandHeader::g_function_number_set_format_parameters, second_packet))
         goto done;
 
-    // we need to manage the settings data 
+    // we need to manage the data 
     answer_packet = dynamic_cast<NetAnswerSetFormatParameters *>(second_packet);
 
     if(!answer_packet->hasError())
@@ -1791,8 +1965,8 @@ bool CameraControl::setFormatParameters(std::size_t in_serial_origin   ,
     }
 
 done:
-    if(second_packet == NULL) delete second_packet;
-    if(command       == NULL) delete command      ;
+    if(second_packet != NULL) delete second_packet;
+    if(command       != NULL) delete command      ;
 
     return result;
 }
@@ -1846,10 +2020,10 @@ bool CameraControl::setAcquisitionType(NetAnswerGetSettings::AcquisitionType in_
 {
     DEB_MEMBER_FUNCT();
 
-    int32_t                error           = 0    ;
-    bool                   result          = false;
-    NetGenericHeader     * second_packet   = NULL ;
-    NetCommandHeader     * command         = new NetCommandSetAcquisitionType();
+    int32_t            error           = 0    ;
+    bool               result          = false;
+    NetGenericHeader * second_packet   = NULL ;
+    NetCommandHeader * command         = new NetCommandSetAcquisitionType();
     
     NetAnswerSetAcquisitionType  * answer_packet            = NULL ;
     NetCommandSetAcquisitionType * command_acquisition_type = dynamic_cast<NetCommandSetAcquisitionType *>(command);
@@ -1864,7 +2038,7 @@ bool CameraControl::setAcquisitionType(NetAnswerGetSettings::AcquisitionType in_
     if(!waitCommandDonePacket(NetCommandHeader::g_function_number_set_acquisition_type, second_packet))
         goto done;
 
-    // we need to manage the settings data 
+    // we need to manage the data 
     answer_packet = dynamic_cast<NetAnswerSetAcquisitionType *>(second_packet);
 
     if(!answer_packet->hasError())
@@ -1874,8 +2048,216 @@ bool CameraControl::setAcquisitionType(NetAnswerGetSettings::AcquisitionType in_
     }
 
 done:
-    if(second_packet == NULL) delete second_packet;
-    if(command       == NULL) delete command      ;
+    if(second_packet != NULL) delete second_packet;
+    if(command       != NULL) delete command      ;
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool acquire(bool in_sync)
+ * \brief  Start a new acquisition by sending a command to the hardware
+ * \param  in_sync synchronous acquisition flag (if true will wait the command done reception)
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::acquire(bool in_sync)
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t            error           = 0    ;
+    bool               result          = false;
+    NetGenericHeader * second_packet   = NULL ;
+    NetAnswerAcquire * answer_packet   = NULL ;
+    NetCommandHeader * command         = new NetCommandAcquire();
+
+    // first flush old InquireAcquisitionStatus packets (should not occur!)
+    flushAcquisitionStatusPackets();
+
+    // send the command and treat the acknowledge
+    if(!sendCommandWithAck(command, error))
+        goto done;
+
+    if(in_sync)
+    {
+        // wait for the command done
+        if(!waitCommandDonePacket(NetCommandHeader::g_function_number_acquire, second_packet))
+            goto done;
+
+        // we need to manage the data 
+        answer_packet = dynamic_cast<NetAnswerAcquire *>(second_packet);
+
+        if(!answer_packet->hasError())
+        {
+            result = true;
+        }
+    }
+    else
+    {
+        result = true;
+    }
+
+done:
+    if(second_packet != NULL) delete second_packet;
+    if(command       != NULL) delete command      ;
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool checkEndOfAcquisition()
+ * \brief  Check if the acquisition is finished (command done received ?)
+ * \param  out_error_occured if the acquisition is finished, give an error state
+ * \return true if the acquisition is finished, false if it is not
+ ****************************************************************************************************/
+bool CameraControl::checkEndOfAcquisition(bool & out_error_occured)
+{
+    DEB_MEMBER_FUNCT();
+
+    NetGenericHeader * packet = NULL;
+    bool result = false;
+    
+    out_error_occured = false;
+
+    // check the command done reception
+    if(getCommandDonePacket(NetCommandHeader::g_function_number_acquire, packet))
+    {
+        // we need to manage the data 
+        NetAnswerAcquire * answer_packet = dynamic_cast<NetAnswerAcquire *>(packet);
+
+        out_error_occured = answer_packet->hasError();
+        result = true;
+    }
+
+    if(packet != NULL) 
+        delete packet;
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool terminateAcquisition()
+ * \brief  Stop the acquisition by sending a command to the hardware
+ * \param  none
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::terminateAcquisition()
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t error  = 0    ;
+    bool    result = false;
+
+    NetGenericHeader              * first_packet  = NULL ;
+    NetAnswerTerminateAcquisition * answer_packet = NULL ;
+    NetCommandHeader              * command       = new NetCommandTerminateAcquisition();
+
+    // send the command without no acknowledge
+    if(!sendCommandWithoutAck(command, error))
+        goto done;
+
+    // wait for the command done
+    if(!waitCommandDonePacket(NetCommandHeader::g_function_number_terminate_acquisition, first_packet))
+        goto done;
+
+    // we need to manage the settings data 
+    answer_packet = dynamic_cast<NetAnswerTerminateAcquisition *>(first_packet);
+
+    if(!answer_packet->hasError())
+    {
+        result = true;
+    }
+
+done:
+    if(first_packet != NULL) delete first_packet;
+    if(command      != NULL) delete command      ;
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool terminateImageRetrieve()
+ * \brief  Stop the image retrieve process by sending a command to the hardware
+ * \param  none
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::terminateImageRetrieve()
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t error  = 0    ;
+    bool    result = false;
+
+    NetGenericHeader                * first_packet  = NULL ;
+    NetAnswerTerminateImageRetrieve * answer_packet = NULL ;
+    NetCommandHeader                * command       = new NetCommandTerminateImageRetrieve();
+
+    // send the command without no acknowledge
+    if(!sendCommandWithoutAck(command, error))
+        goto done;
+
+    // wait for the command done
+    if(!waitCommandDonePacket(NetCommandHeader::g_function_number_terminate_image_retrieve, first_packet))
+        goto done;
+
+    // we need to manage the settings data 
+    answer_packet = dynamic_cast<NetAnswerTerminateImageRetrieve *>(first_packet);
+
+    if(!answer_packet->hasError())
+    {
+        result = true;
+    }
+
+done:
+    if(first_packet != NULL) delete first_packet;
+    if(command      != NULL) delete command      ;
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool retrieveImage()
+ * \brief  start the reception of the current image by sending a command to the hardware
+ * \param  none
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::retrieveImage()
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t            error   = 0    ;
+    bool               result  = false;
+    NetCommandHeader * command = new NetCommandRetrieveImage();
+
+    // first flush old image packets (should not occur!)
+    flushImagePackets();
+
+    // send the command and treat the acknowledge
+    result = sendCommandWithAck(command, error);
+    delete command;
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn bool inquireAcquisitionStatus()
+ * \brief  Inquire the acquisition status by sending a command to the hardware
+ * \param  none
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::inquireAcquisitionStatus()
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t            error   = 0    ;
+    bool               result  = false;
+    NetCommandHeader * command = new NetCommandInquireAcquisitionStatus();
+
+    // first flush old acquisition status packets (should not occur!)
+    flushAcquisitionStatusPackets();
+
+    // send the command without no acknowledge
+    result = sendCommandWithoutAck(command, error);
+    delete command;
 
     return result;
 }

@@ -178,6 +178,30 @@ class CameraControl : public CameraSingleton<CameraControl>
         // Wait for a new command done packet to be received
         bool waitCommandDonePacket(uint16_t in_function_number, NetGenericHeader * & out_packet);
 
+        // get a new packet is there is one received
+        bool getPacket(NetPacketsGroupId in_group_id, NetGenericHeader * & out_packet);
+
+        // get a new command done packet is there is one received
+        bool getCommandDonePacket(uint16_t in_function_number, NetGenericHeader * & out_packet);
+
+        // get a new image packet is there is one received
+        bool getImagePacket(NetGenericHeader * & out_packet);
+
+        // get a new ack packet to be received
+        bool getAcknowledgePacket(NetGenericHeader * & out_packet);
+
+        // get a new data packet if there is one received
+        bool getDataPacket(uint16_t in_data_type, NetGenericHeader * & out_packet);
+
+        // flush old acknowledge packets
+        void flushAcknowledgePackets();
+
+        // flush old acquisition status packets
+        void flushAcquisitionStatusPackets();
+
+        // flush old image packets
+        void flushImagePackets();
+
        /**************************************************************************************************
         * COMMANDS MANAGEMENT
         **************************************************************************************************/
@@ -207,6 +231,24 @@ class CameraControl : public CameraSingleton<CameraControl>
 
         // Change the acquisition type by sending a command to the hardware
         bool setAcquisitionType(NetAnswerGetSettings::AcquisitionType in_acquisition_type);
+
+        // Start a new acquisition by sending a command to the hardware
+        bool acquire(bool in_sync);
+
+        // Check if the acquisition is finished (command done received ?)
+        bool checkEndOfAcquisition(bool & out_error_occured);
+
+        // Stop the acquisition by sending a command to the hardware
+        bool terminateAcquisition();
+
+        // Stop the image retrieve process by sending a command to the hardware
+        bool terminateImageRetrieve();
+
+        // start the reception of the current image by sending a command to the hardware
+        bool retrieveImage();
+
+        // Inquire the acquisition status by sending a command to the hardware
+        bool inquireAcquisitionStatus();
 
        /***************************************************************************************************
         * SINGLETON MANAGEMENT

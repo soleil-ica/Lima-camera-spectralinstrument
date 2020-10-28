@@ -152,7 +152,7 @@ void Camera::setNbFrames(int nb_frames) ///< [in] number of frames to take
 {
     DEB_MEMBER_FUNCT();
     DEB_PARAM() << DEB_VAR1(nb_frames);
-    m_nb_frames_to_acquire = nb_frames;
+    m_nb_frames_to_acquire = static_cast<std::size_t>(nb_frames);
 }
 
 //-----------------------------------------------------------------------------
@@ -161,7 +161,7 @@ void Camera::setNbFrames(int nb_frames) ///< [in] number of frames to take
 void Camera::getNbFrames(int & nb_frames) const ///< [out] current number of frames to take
 {
     DEB_MEMBER_FUNCT();
-    nb_frames = m_nb_frames_to_acquire;
+    nb_frames = static_cast<int>(m_nb_frames_to_acquire);
     DEB_RETURN() << DEB_VAR1(nb_frames);
 }
 
@@ -171,5 +171,5 @@ void Camera::getNbFrames(int & nb_frames) const ///< [out] current number of fra
 void Camera::getNbHwAcquiredFrames(int & nb_acq_frames) const
 { 
     DEB_MEMBER_FUNCT();    
-//    nb_acq_frames = m_image_number;
+    nb_acq_frames = static_cast<int>(m_nb_frames_acquired);
 }

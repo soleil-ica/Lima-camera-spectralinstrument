@@ -56,16 +56,22 @@ NetPacketsGroups::NetPacketsGroups()
 {
     // we should create all the needed lists which are fixed during runtime
     createGroup("acknowledge list", static_cast<NetPacketsGroupId>(NetGenericHeader::g_packet_identifier_for_acknowledge));
-    createGroup("image list"      , static_cast<NetPacketsGroupId>(NetGenericHeader::g_packet_identifier_for_image));
+    createGroup("image list"      , static_cast<NetPacketsGroupId>(NetGenericHeader::g_packet_identifier_for_image      ));
 
-    createGroup("get status list" , NetGenericAnswer::g_data_type_get_status           );
-    createGroup("get parameters"  , NetGenericAnswer::g_data_type_get_camera_parameters);
-    createGroup("get settings"    , NetGenericAnswer::g_data_type_get_settings         );
+    // get answers groups
+    createGroup("get status list"        , NetGenericAnswer::g_data_type_get_status           );
+    createGroup("get parameters list"    , NetGenericAnswer::g_data_type_get_camera_parameters);
+    createGroup("get settings list"      , NetGenericAnswer::g_data_type_get_settings         );
+    createGroup("acquisition status list", NetGenericAnswer::g_data_type_acquisition_status   );
 
-    createGroup("set acquisition mode" , NetCommandHeader::g_function_number_set_acquisition_mode );
-    createGroup("set exposure time"    , NetCommandHeader::g_function_number_set_exposure_time    );
-    createGroup("set format parameters", NetCommandHeader::g_function_number_set_format_parameters);
-    createGroup("set acquisition type" , NetCommandHeader::g_function_number_set_acquisition_type );
+    // command done groups
+    createGroup("set acquisition mode list"    , NetCommandHeader::g_function_number_set_acquisition_mode    );
+    createGroup("set exposure time list"       , NetCommandHeader::g_function_number_set_exposure_time       );
+    createGroup("set format parameters list"   , NetCommandHeader::g_function_number_set_format_parameters   );
+    createGroup("set acquisition type list"    , NetCommandHeader::g_function_number_set_acquisition_type    );
+    createGroup("acquire list"                 , NetCommandHeader::g_function_number_acquire                 );
+    createGroup("terminate acquisition list"   , NetCommandHeader::g_function_number_terminate_acquisition   );
+    createGroup("terminate image retrieve list", NetCommandHeader::g_function_number_terminate_image_retrieve);
 }
 
 /****************************************************************************************************

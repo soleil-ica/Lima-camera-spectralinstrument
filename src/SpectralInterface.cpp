@@ -145,7 +145,6 @@ void Interface::getStatus(StatusType& status)
     DEB_RETURN() << DEB_VAR1(status);
 }
 
-
 //-----------------------------------------------------
 // @brief return the hw number of acquired frames
 //-----------------------------------------------------

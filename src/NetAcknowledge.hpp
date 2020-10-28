@@ -66,7 +66,7 @@ std::size_t NetAcknowledge::totalSize() const
  ****************************************************************************************************/
 bool NetAcknowledge::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
 {
-    if(in_out_memory_size < NetAcknowledge::size())
+    if(in_out_memory_size != NetAcknowledge::size())
         return false;
 
     readData(in_out_memory_data, m_accepted_flag);
@@ -85,7 +85,7 @@ bool NetAcknowledge::read(const uint8_t * & in_out_memory_data, std::size_t & in
  ****************************************************************************************************/
 bool NetAcknowledge::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
 {
-    if(in_out_memory_size < NetAcknowledge::size())
+    if(in_out_memory_size != NetAcknowledge::size())
         return false;
 
     writeData(in_out_memory_data, m_accepted_flag);

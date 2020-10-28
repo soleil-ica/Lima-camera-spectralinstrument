@@ -21,69 +21,20 @@
 //###########################################################################
 
 //===================================================================================================
-// Class NetCommandHeader
+// Class NetCommandRetrieveImage
 //===================================================================================================
-const uint16_t NetCommandHeader::g_function_number_get_status            = 1011;
-const uint16_t NetCommandHeader::g_function_number_get_camera_parameters = 1048;
-const uint16_t NetCommandHeader::g_function_number_get_settings          = 1041;
-
-const uint16_t NetCommandHeader::g_function_number_set_acquisition_mode  = 1034;
-const uint16_t NetCommandHeader::g_function_number_set_exposure_time     = 1035;
-const uint16_t NetCommandHeader::g_function_number_set_format_parameters = 1043;
-const uint16_t NetCommandHeader::g_function_number_set_acquisition_type  = 1036;
-
-const uint16_t NetCommandHeader::g_function_number_acquire                    = 1037;
-const uint16_t NetCommandHeader::g_function_number_terminate_acquisition      = 1018;
-const uint16_t NetCommandHeader::g_function_number_retrieve_image             = 1019;
-const uint16_t NetCommandHeader::g_function_number_terminate_image_retrieve   = 1020;
-const uint16_t NetCommandHeader::g_function_number_inquire_acquisition_status = 1017;
-
 /****************************************************************************************************
- * \fn NetCommandHeader()
+ * \fn NetCommandRetrieveImage()
  * \brief  constructor
  * \param  none
  * \return none
  ****************************************************************************************************/
-NetCommandHeader::NetCommandHeader()
+NetCommandRetrieveImage::NetCommandRetrieveImage()
 {
-    m_function_number      = 0   ; // function to be executed (1000 .. 1999)
-    m_specific_data_lenght = 0   ; // length of parameter block following (0, if none)
-    m_is_server_command    = true; // some commands are server related, others to a camera
-    m_packet_name          = "NetCommandHeader";
-    m_packet_identifier    = NetGenericHeader::g_packet_identifier_for_command; 
-}
-
-/****************************************************************************************************
- * \fn void initPacketLenght()
- * \brief  init the packet lenght member
- * \param  none
- * \return none
- ****************************************************************************************************/
-void NetCommandHeader::initPacketLenght()
-{
-    m_packet_lenght = totalSize(); // total number of bytes in packet
-}
-
-/****************************************************************************************************
- * \fn void initCameraIdentifier(uint8_t in_camera_identifier)
- * \brief  init the camera identifier member
- * \param  in_camera_identifier camera identifier, will only be used for a camera command
- * \return none
- ****************************************************************************************************/
-void NetCommandHeader::initCameraIdentifier(uint8_t in_camera_identifier)
-{
-    m_camera_identifier = (m_is_server_command) ? g_server_command_identifier : in_camera_identifier;
-}
-
-/****************************************************************************************************
- * \fn void initSpecificDataLenght()
- * \brief  init the specific data lenght
- * \param  none
- * \return none
- ****************************************************************************************************/
-void NetCommandHeader::initSpecificDataLenght()
-{
-    m_specific_data_lenght = totalSize() - NetCommandHeader::totalSize();
+    m_function_number   = NetCommandHeader::g_function_number_retrieve_image; // function to be executed (1000 .. 1999)
+    m_packet_name       = "Command RetrieveImage";
+    m_is_server_command = true; // some commands are server related, others to a camera
+    m_transfert_type    = static_cast<uint16_t>(NetCommandRetrieveImage::TransfertType::TransfertU16);
 }
 
 /****************************************************************************************************
@@ -92,10 +43,9 @@ void NetCommandHeader::initSpecificDataLenght()
  * \param  none
  * \return specific packet size
  ****************************************************************************************************/
-std::size_t NetCommandHeader::size() const
+std::size_t NetCommandRetrieveImage::size() const
 {
-    return sizeof(m_function_number     ) + 
-           sizeof(m_specific_data_lenght);
+    return sizeof(m_transfert_type);
 }
 
 /****************************************************************************************************
@@ -104,9 +54,9 @@ std::size_t NetCommandHeader::size() const
  * \param  none
  * \return total packet size
  ****************************************************************************************************/
-std::size_t NetCommandHeader::totalSize() const
+std::size_t NetCommandRetrieveImage::totalSize() const
 {
-    return NetGenericHeader::totalSize() + NetCommandHeader::size();
+    return NetCommandHeader::totalSize() + NetCommandRetrieveImage::size();
 }
 
 /****************************************************************************************************
@@ -116,15 +66,14 @@ std::size_t NetCommandHeader::totalSize() const
  * \param  in_out_memory_size size of the rest of memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetCommandHeader::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
+bool NetCommandRetrieveImage::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
 {
-    if(in_out_memory_size < NetCommandHeader::size())
+    if(in_out_memory_size != NetCommandRetrieveImage::size())
         return false;
 
-    readData(in_out_memory_data, m_function_number     );
-    readData(in_out_memory_data, m_specific_data_lenght);
+    readData(in_out_memory_data, m_transfert_type);
 
-    in_out_memory_size -= NetCommandHeader::size();
+    in_out_memory_size -= NetCommandRetrieveImage::size();
 
     return true;
 }
@@ -136,15 +85,14 @@ bool NetCommandHeader::read(const uint8_t * & in_out_memory_data, std::size_t & 
  * \param  in_out_memory_size size of the rest of the memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetCommandHeader::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
+bool NetCommandRetrieveImage::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
 {
-    if(in_out_memory_size < NetCommandHeader::size())
+    if(in_out_memory_size < NetCommandRetrieveImage::size())
         return false;
 
-    writeData(in_out_memory_data, m_function_number     );
-    writeData(in_out_memory_data, m_specific_data_lenght);
+    writeData(in_out_memory_data, m_transfert_type);
 
-    in_out_memory_size -= NetCommandHeader::size();
+    in_out_memory_size -= NetCommandRetrieveImage::size();
 
     return true;
 }
@@ -156,12 +104,12 @@ bool NetCommandHeader::write(uint8_t * & in_out_memory_data, std::size_t & in_ou
  * \param  in_out_memory_size size of the rest of memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetCommandHeader::totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
+bool NetCommandRetrieveImage::totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
 {
-    if(!NetGenericHeader::totalRead(in_out_memory_data, in_out_memory_size))
+    if(!NetCommandHeader::totalRead(in_out_memory_data, in_out_memory_size))
         return false;
 
-    return NetCommandHeader::read(in_out_memory_data, in_out_memory_size);
+    return NetCommandRetrieveImage::read(in_out_memory_data, in_out_memory_size);
 }
 
 /****************************************************************************************************
@@ -171,12 +119,12 @@ bool NetCommandHeader::totalRead(const uint8_t * & in_out_memory_data, std::size
  * \param  in_out_memory_size size of the rest of the memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetCommandHeader::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
+bool NetCommandRetrieveImage::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
 {
-    if(!NetGenericHeader::totalWrite(in_out_memory_data, in_out_memory_size))
+    if(!NetCommandHeader::totalWrite(in_out_memory_data, in_out_memory_size))
         return false;
 
-    return NetCommandHeader::write(in_out_memory_data, in_out_memory_size);
+    return NetCommandRetrieveImage::write(in_out_memory_data, in_out_memory_size);
 }
 
 /****************************************************************************************************
@@ -185,12 +133,10 @@ bool NetCommandHeader::totalWrite(uint8_t * & in_out_memory_data, std::size_t & 
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetCommandHeader::log() const
+void NetCommandRetrieveImage::log() const
 {
-    std::cout << "-- NetCommandHeader content --" << std::endl;
-    std::cout << "m_function_number: " << (int)m_function_number << std::endl;
-    std::cout << "m_specific_data_lenght: " << (int)m_specific_data_lenght << std::endl;
-    std::cout << "m_camera_identifier: " << (int)m_camera_identifier << std::endl;
+    std::cout << "-- NetCommandRetrieveImage content --" << std::endl;
+    std::cout << "m_transfert_type: " << (int)m_transfert_type << std::endl;
 }
 
 /****************************************************************************************************
@@ -199,10 +145,10 @@ void NetCommandHeader::log() const
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetCommandHeader::totalLog() const
+void NetCommandRetrieveImage::totalLog() const
 {
-    NetGenericHeader::totalLog();
-    NetCommandHeader::log();
+    NetCommandHeader::totalLog();
+    NetCommandRetrieveImage::log();
 }
 
 //###########################################################################

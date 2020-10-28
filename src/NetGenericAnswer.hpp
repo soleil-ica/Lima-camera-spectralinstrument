@@ -27,6 +27,7 @@ const uint16_t NetGenericAnswer::g_data_type_get_status            = 2012;
 const uint16_t NetGenericAnswer::g_data_type_get_camera_parameters = 2010;
 const uint16_t NetGenericAnswer::g_data_type_get_settings          = 2008;
 const uint16_t NetGenericAnswer::g_data_type_command_done          = 2007;
+const uint16_t NetGenericAnswer::g_data_type_acquisition_status    = 2004;
 
 /****************************************************************************************************
  * \fn NetGenericAnswer()
@@ -84,6 +85,17 @@ bool NetGenericAnswer::isGetCameraParameters() const
 bool NetGenericAnswer::isGetSettings() const
 {
     return (m_data_type == NetGenericAnswer::g_data_type_get_settings);
+}
+
+/****************************************************************************************************
+ * \fn bool isAcquisitionStatus()
+ * \brief  check if this is an acquisition status
+ * \param  none
+ * \return true if this is an acquisition status
+ ****************************************************************************************************/
+bool NetGenericAnswer::isAcquisitionStatus() const
+{
+    return (m_data_type == NetGenericAnswer::g_data_type_acquisition_status);
 }
 
 /****************************************************************************************************

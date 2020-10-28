@@ -27,30 +27,37 @@ Camera::Status Camera::getStatus() ///< [out] current camera status
 {
     DEB_MEMBER_FUNCT();
 
-    CameraControl::DetectorStatus detector_status = CameraControl::getConstInstance()->getLatestStatus();
-
     Camera::Status result;
 
-    switch (detector_status)
+    int thread_status = CameraAcqThread::getConstInstance()->getStatus();
+
+    // error during the acquisition management ?
+    // the device becomes in error state.
+    if(thread_status == CameraAcqThread::Error)
     {
-        case CameraControl::DetectorStatus::Ready:
-            result = Camera::Status::Ready;
-            break;
-        case CameraControl::DetectorStatus::Exposure:
-            result = Camera::Status::Exposure;
-            break;
-        case CameraControl::DetectorStatus::Readout:
-            result = Camera::Status::Readout;
-            break;
-        case CameraControl::DetectorStatus::Latency:
-            result = Camera::Status::Latency;
-            break;
-        case CameraControl::DetectorStatus::Fault:
-            result = Camera::Status::Fault;
-            break;
-        default:
-            result = Camera::Status::Fault;
-            break;
+        result = Camera::Status::Fault;
+    }
+    else
+    // the device is in acquisition.
+    if(thread_status == CameraAcqThread::Running)
+    {
+        result = Camera::Status::Exposure;
+    }
+    else
+    // the device is not in acquisition or in error, so we can read the hardware camera status
+    {
+        CameraControl::DetectorStatus detector_status = CameraControl::getConstInstance()->getLatestStatus();
+
+        switch (detector_status)
+        {
+            case CameraControl::DetectorStatus::Ready   : result = Camera::Status::Ready   ; break;
+            case CameraControl::DetectorStatus::Exposure: result = Camera::Status::Exposure; break;
+            case CameraControl::DetectorStatus::Readout : result = Camera::Status::Readout ; break;
+            case CameraControl::DetectorStatus::Latency : result = Camera::Status::Latency ; break;
+            case CameraControl::DetectorStatus::Fault   : result = Camera::Status::Fault   ; break;
+
+            default: result = Camera::Status::Fault; break;
+        }
     }
 
     return result;
@@ -82,6 +89,38 @@ void Camera::prepareAcq()
 void Camera::startAcq()
 {
     DEB_MEMBER_FUNCT();
+
+    //================================================================================================
+    // before a new acquisition, some data need to be updated
+    //================================================================================================
+    // Forceing the acquisition mode to single image mode by sending a command to the hardware
+    CameraControl::getInstance()->setAcquisitionMode(NetAnswerGetSettings::AcquisitionMode::SingleImage);
+
+    // Change the acquisition type by sending a command to the hardware
+    NetAnswerGetSettings::AcquisitionType acquisition_type;
+
+    switch (m_trigger_mode)
+    {       
+        case lima::TrigMode::IntTrig:
+            acquisition_type = NetAnswerGetSettings::AcquisitionType::Light;
+            break;
+
+        case lima::TrigMode::ExtTrigSingle:
+        case lima::TrigMode::ExtTrigMult  :
+            acquisition_type = NetAnswerGetSettings::AcquisitionType::Triggered;
+            break;
+
+        default:
+            THROW_HW_ERROR(ErrorType::Error) << "startAcq - Incoherent selected trigger mode: " << m_trigger_mode << "!";
+            break;
+    }
+
+    CameraControl::getInstance()->setAcquisitionType(acquisition_type);
+
+    //================================================================================================
+    // starting the acquisition thread
+    //================================================================================================
+    CameraAcqThread::startAcq();
 }
 
 //-----------------------------------------------------------------------------
@@ -90,5 +129,9 @@ void Camera::startAcq()
 void Camera::stopAcq()
 {
     DEB_MEMBER_FUNCT();
-    execStopAcq();
+
+    //================================================================================================
+    // stopping the acquisition thread
+    //================================================================================================
+    CameraAcqThread::stopAcq();
 }

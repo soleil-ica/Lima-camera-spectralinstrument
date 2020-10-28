@@ -20,14 +20,14 @@
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
 /****************************************************************************************************
- * \file   CameraReceiveDataThread.h
+ * \file   CameraAcqThread.h
  * \brief  header file of the receive data thread class.
  * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
- * \date   Created on October 22, 2020
+ * \date   Created on October 28, 2020
  ****************************************************************************************************/
 
-#ifndef SPECTRALCAMERARECEIVEDATATHREAD_H_
-#define SPECTRALCAMERARECEIVEDATATHREAD_H_
+#ifndef SPECTRALCAMERAACQTHREAD_H_
+#define SPECTRALCAMERAACQTHREAD_H_
 
 // PROJECT
 #include "SpectralCompatibility.h"
@@ -51,33 +51,33 @@ namespace lima
 namespace Spectral 
 {
 /*
- *  \class CameraReceiveDataThread
- *  \brief This class is used to receive the tcp/ip data packets from the detector software
+ *  \class CameraAcqThread
+ *  \brief This class is used to manage an acquisition
  */
-class CameraReceiveDataThread : public CmdThread
+class CameraAcqThread : public CmdThread
 {
-    DEB_CLASS_NAMESPC(DebModCamera, "CameraReceiveDataThread", "Spectral");
+    DEB_CLASS_NAMESPC(DebModCamera, "CameraAcqThread", "Spectral");
 
 public:
 	// Status
     enum
 	{ 
-		Idle    = MaxThreadStatus, // ready to manage data reception
-        Running                  , // data reception is running 
+		Idle    = MaxThreadStatus, // ready to manage data acquisition
+        Running                  , // data acquisition is running 
         Error                    , // unexpected error
 	};
 
     // Cmd
     enum
     { 
-        StartReception = MaxThreadCmd, // command used to start the data reception
+        StartAcq = MaxThreadCmd, // command used to start the data acquisition
     };
 
     // constructor
-    CameraReceiveDataThread();
+    CameraAcqThread();
 
     // destructor
-    virtual ~CameraReceiveDataThread();
+    virtual ~CameraAcqThread();
 
     // starts the thread
     virtual void start();
@@ -91,18 +91,24 @@ public:
     // Release the thread
     static void release();
 
-    // Starts the data reception
-    static void startReception();
+    // Starts the data acquisition
+    static void startAcq();
 
-    // Stops the data reception
-    static void stopReception();
+    // Stops the data acquisition
+    static void stopAcq();
+
+    // return the singleton
+    static CameraAcqThread * getInstance();
+
+    // return the singleton (const version)
+    static const CameraAcqThread * getConstInstance();
 
 protected:
     // Manage an incomming error
     void manageError(std::string & in_error_text);
 
-    // Stops the data reception and abort or restart the thread 
-    static void applyStopReception(bool in_restart, bool in_always_abort);
+    // Stops the data acquisition and abort or restart the thread 
+    static void applyStopAcq(bool in_restart, bool in_always_abort);
 
 protected:
     // inits the thread
@@ -112,11 +118,11 @@ protected:
     virtual void execCmd(int cmd);
 
 private:
-    // execute the StartReception command
-    void execStartReception();
+    // execute the StartAcq command
+    void execStartAcq();
 
-    // execute a stop of the reception
-    void execStopReception();
+    // execute a stop of the acquisition
+    void execStopAcq();
 
 private :
     volatile bool m_force_stop;
@@ -124,12 +130,12 @@ private :
     //------------------------------------------------------------------
     // singleton management
     //------------------------------------------------------------------
-    static CameraReceiveDataThread * g_singleton;
+    static CameraAcqThread * g_singleton;
 };
 
 } // namespace Spectral
 } // namespace lima
 
-#endif // SPECTRALCAMERARECEIVEDATATHREAD_H_
+#endif // SPECTRALCAMERAACQTHREAD_H_
 
 /*************************************************************************/
