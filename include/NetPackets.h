@@ -34,6 +34,10 @@
 #include <cstring>
 #include <string>
 #include <stdint.h>
+#include <vector>
+
+// LIMA
+#include "lima/SizeUtils.h"
 
 // PROJECT
 #include "SpectralCompatibility.h"
@@ -254,6 +258,7 @@ protected:
     static const uint16_t g_function_number_retrieve_image            ; // to set Function number
     static const uint16_t g_function_number_terminate_image_retrieve  ; // to set Function number
     static const uint16_t g_function_number_inquire_acquisition_status; // to set Function number
+    static const uint16_t g_function_number_configure_packets         ; // to set Function number
 };
 
 /*
@@ -532,6 +537,7 @@ protected:
 class NetCommandRetrieveImage : public NetCommandHeader
 {
     friend class CameraControl;    
+    friend class NetImage;
 
     // image transfert type values
     typedef enum TransfertType
@@ -592,6 +598,53 @@ class NetCommandInquireAcquisitionStatus : public NetCommandHeader
 public:
     // constructor
     NetCommandInquireAcquisitionStatus();
+};
+
+/*
+ *  \class NetCommandConfigurePackets
+ *  \brief This class is a Configure Packets command packet class
+ */
+class NetCommandConfigurePackets : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetCommandConfigurePackets();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // get the specific packet size
+    virtual std::size_t size() const;
+
+    // read the values stored into a memory block and fill them into the class members
+    virtual bool read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // write the class members values into a memory block
+    virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // get the total packet size
+    virtual std::size_t totalSize() const;
+
+    // totally read the values stored into a memory block and fill them into the class members
+    virtual bool totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // totally write the class members values into a memory block
+    virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    uint16_t m_pixels_per_packet; // pixels per packet
+    uint16_t m_packet_delay_usec; // packet sending loop delay in microseconds
 };
 
 /*
@@ -1162,7 +1215,8 @@ public:
  */
 class NetAnswerAcquisitionStatus : public NetGenericAnswer
 {
-    friend class CameraControl;    
+    friend class CameraControl;
+    friend class CameraAcqThread;
 
 public:
     // constructor
@@ -1206,17 +1260,43 @@ protected:
 };
 
 /*
- *  \class NetImage
- *  \brief This class is an image packet class
+ *  \class NetAnswerConfigurePackets
+ *  \brief This class is a Command Done packet class for configure packets answer
  */
-class NetImage : public NetGenericHeader
+class NetAnswerConfigurePackets : public NetAnswerCommandDone
+{
+    friend class CameraControl;
+
+public:
+    // constructor
+    NetAnswerConfigurePackets();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+};
+
+/*
+ *  \class NetImageHeader
+ *  \brief This class is an image header packet class
+ */
+class NetImageHeader : public NetGenericHeader
 {
     friend class CameraControl   ;
+    friend class CameraAcqThread ;
     friend class NetPacketsGroups;
 
 public:
     // constructor
-    NetImage();
+    NetImageHeader();
 
     //-----------------------
     // not recursive methods
@@ -1232,6 +1312,9 @@ public:
 
     // log the class content
     virtual void log() const;
+
+    // check if there is an error
+    bool hasError() const;
 
     //-----------------------
     // recursive methods
@@ -1258,6 +1341,56 @@ protected:
     int32_t  m_current_packets_nb  ; // number (0..N) of currently transmitted package
     int32_t  m_offset              ; // packet’s offset into the linear image array
     uint32_t m_specific_data_lenght; // length of Image structure that is following in bytes
+};
+
+/*
+ *  \class NetImage
+ *  \brief This class is an image packet class
+ */
+class NetImage : public NetImageHeader
+{
+    friend class CameraControl   ;
+    friend class NetPacketsGroups;
+
+public:
+    // constructor
+    NetImage();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // get the specific packet size
+    virtual std::size_t size() const;
+
+    // read the values stored into a memory block and fill them into the class members
+    virtual bool read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // write the class members values into a memory block
+    virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // log the class content
+    virtual void log() const;
+
+    // copy the image part into a destination buffer
+    bool copy(void * in_out_buffer, lima::FrameDim & in_buffer_dim) const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // get the total packet size
+    virtual std::size_t totalSize() const;
+
+    // totally read the values stored into a memory block and fill them into the class members
+    virtual bool totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // totally write the class members values into a memory block
+    virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    std::vector<uint16_t> m_image; // 16 bits image part
 };
 
 } // namespace Spectral

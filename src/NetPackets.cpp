@@ -155,11 +155,13 @@ double ntohd(double in_value)
 #include "NetCommandTerminateImageRetrieve.hpp"
 #include "NetCommandRetrieveImage.hpp"
 #include "NetCommandInquireAcquisitionStatus.hpp"
-
-// image
-#include "NetAcknowledge.hpp"
+#include "NetCommandConfigurePackets.hpp"
 
 // acknowledge
+#include "NetAcknowledge.hpp"
+
+// image
+#include "NetImageHeader.hpp"
 #include "NetImage.hpp"
 
 // answers of get commands
@@ -181,5 +183,6 @@ double ntohd(double in_value)
 #include "NetAnswerTerminateAcquisition.hpp"
 #include "NetAnswerTerminateImageRetrieve.hpp"
 #include "NetAnswerAcquisitionStatus.hpp"
+#include "NetAnswerConfigurePackets.hpp"
 
 //###########################################################################

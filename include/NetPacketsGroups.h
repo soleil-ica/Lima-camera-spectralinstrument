@@ -90,6 +90,9 @@ public:
     // set the timeout delay in seconds for all the groups
     void setDelayBeforeTimeoutSec(int in_wait_packet_timeout_sec);
 
+    // set the timeout delay in seconds for a specific group
+    void setDelayBeforeTimeoutSec(NetPacketsGroupId in_group_id, int in_wait_packet_timeout_sec);
+
 private:
     // add a new group 
     void createGroup(const std::string & in_name, NetPacketsGroupId in_group_id);

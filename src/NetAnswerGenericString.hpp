@@ -94,7 +94,7 @@ bool NetAnswerGenericString::write(uint8_t * & in_out_memory_data, std::size_t &
     if(in_out_memory_size != NetAnswerGenericString::size())
         return false;
 
-    memcpy(reinterpret_cast<char *>(in_out_memory_data), m_value.c_str(), in_out_memory_size);  
+    memcpy(reinterpret_cast<char *>(in_out_memory_data), m_value.data(), in_out_memory_size);  
 
     in_out_memory_size -= NetAnswerGenericString::size();
 

@@ -53,10 +53,10 @@ namespace Spectral
     // pre-defines the BufferCtrlObj class
     class BufferCtrlObj;
 
-/*******************************************************************
- * \class Camera
- * \brief object controlling the Spectral camera
- *******************************************************************/
+   /*******************************************************************
+    * \class Camera
+    * \brief object controlling the Spectral camera
+    *******************************************************************/
 	class LIBSPECTRAL_API Camera
 	{
 	    DEB_CLASS_NAMESPC(DebModCamera, "Camera", "Spectral");
@@ -106,8 +106,9 @@ namespace Spectral
         void getPixelSize(double& sizex, double& sizey);
 
         // -- Buffer control object
-        HwBufferCtrlObj* getBufferCtrlObj();
-        HwEventCtrlObj*  getEventCtrlObj();
+        HwBufferCtrlObj * getBufferCtrlObj ();
+        HwEventCtrlObj  * getEventCtrlObj  ();
+        StdBufferCbMgr  & getStdBufferCbMgr();
 
         //-- Synch control object
         void setTrigMode(TrigMode mode);
@@ -153,10 +154,28 @@ namespace Spectral
         // do an update of several detector data (status, exposure time, etc...)
         bool updateData();
 
+        // authorize or disable the state update process
+        void setUpdateAuthorizeFlag(bool in_value);
+
+        // set the number of acquired frames
+        void setNbFramesAcquired(std::size_t in_nb_frames_acquired);
+
+        // get the number of acquired frames
+        std::size_t getNbFramesAcquired() const;
+
+        // increment the number of acquired frames
+        void incrementNbFramesAcquired();
+
+        // check if all the frames were acquired
+        bool allFramesAcquired() const;
+
     //-----------------------------------------------------------------------------
 	private:
         // execute a stop acq command
         void execStopAcq();
+
+        // creates an autolock mutex for the update authorize flag access
+        lima::AutoMutex updateAuthorizeFlagLock() const;
 
 	//-----------------------------------------------------------------------------
 	private:
@@ -201,6 +220,12 @@ namespace Spectral
 
         // current trigger mode
         lima::TrigMode m_trigger_mode;
+
+        // when set, it allows the updateData behaviour. It should be disable during the acquisitions.
+        bool m_update_authorize_flag;
+
+        // condition variable used to protect the update authorize flag
+        mutable lima::Cond m_update_authorize_cond;
 
 		//-----------------------------------------------------------------------------
         // Constants

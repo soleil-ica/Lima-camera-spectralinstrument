@@ -277,12 +277,12 @@ bool ProtectedList<Elem>::waiting_while_empty() const
 
     if(m_elements.empty())
     {
-#ifdef  PROTECTED_LIST_ACTIVATE_DEBUG
-        std::cout << "waiting_while_empty: container is empty, need to wait..." << std::endl;
-#endif
+    #ifdef  PROTECTED_LIST_ACTIVATE_DEBUG
+        std::cout << "waiting_while_empty: container is empty, need to wait..." << m_delay_before_timeout_sec << " seconds." << std::endl;
+    #endif
         result = m_condition_is_not_empty.wait(m_delay_before_timeout_sec);
 
-#ifdef  PROTECTED_LIST_ACTIVATE_DEBUG
+    #ifdef  PROTECTED_LIST_ACTIVATE_DEBUG
         if(!result)
         {
             std::cout << "waiting_while_empty: timeout!" << std::endl;
@@ -291,7 +291,7 @@ bool ProtectedList<Elem>::waiting_while_empty() const
         {
             std::cout << "waiting_while_empty: was waken up." << std::endl;
         }
- #endif
+    #endif
     }
 
     return result;

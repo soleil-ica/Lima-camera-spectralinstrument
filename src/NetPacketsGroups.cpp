@@ -41,7 +41,7 @@
 using namespace lima;
 using namespace lima::Spectral;
 
-#define NET_PACKETS_GROUPS_DEBUG
+//#define NET_PACKETS_GROUPS_DEBUG
 
 //===================================================================================================
 // Class NetPacketsGroups
@@ -72,6 +72,7 @@ NetPacketsGroups::NetPacketsGroups()
     createGroup("acquire list"                 , NetCommandHeader::g_function_number_acquire                 );
     createGroup("terminate acquisition list"   , NetCommandHeader::g_function_number_terminate_acquisition   );
     createGroup("terminate image retrieve list", NetCommandHeader::g_function_number_terminate_image_retrieve);
+    createGroup("configure packets list"       , NetCommandHeader::g_function_number_configure_packets       );
 }
 
 /****************************************************************************************************
@@ -142,7 +143,7 @@ void NetPacketsGroups::createGroup(const std::string & in_name, NetPacketsGroupI
 
     group = new ProtectedList<NetGenericHeader>(in_name);
 
-// new request group
+    // new request group
 #ifdef NET_PACKETS_GROUPS_DEBUG
     std::cout << "NetPacketsGroups::createGroup - Creating new request group: "
               << in_name << " (" << (int)in_group_id << ")" << std::endl;
@@ -173,6 +174,37 @@ void NetPacketsGroups::setDelayBeforeTimeoutSec(int in_wait_packet_timeout_sec)
     {
         ProtectedList<NetGenericHeader> * group = it->second;
 
+        group->setDelayBeforeTimeoutSec(static_cast<double>(in_wait_packet_timeout_sec));
+
+    #ifdef NET_PACKETS_GROUPS_DEBUG
+        std::cout << "NetPacketsGroups::setDelayBeforeTimeoutSec: " << in_wait_packet_timeout_sec 
+                  << " for group: " << group->getName() << std::endl;
+    #endif
+    }
+}
+
+/****************************************************************************************************
+ * \fn void NetPacketsGroups::setDelayBeforeTimeoutSec(NetPacketsGroupId in_group_id, int in_wait_packet_timeout_sec)
+ * \brief  set the timeout delay in seconds for a specific group
+ * \param[in] in_group_id identifier of the group
+ * \param[in] in_wait_packet_timeout_sec timeout delay in seconds
+ * \return none
+ ****************************************************************************************************/
+void NetPacketsGroups::setDelayBeforeTimeoutSec(NetPacketsGroupId in_group_id, int in_wait_packet_timeout_sec)
+{
+    ProtectedList<NetGenericHeader> * group = NULL;
+
+    // check if the group exists in the container 
+    group = searchGroup(in_group_id);
+
+    if(group == NULL)
+    {
+    #ifdef NET_PACKETS_GROUPS_DEBUG
+        std::cout << "NetPacketsGroups::setDelayBeforeTimeoutSec - Error: Group " << (int)in_group_id << " does not exists!" << std::endl;
+    #endif
+    }
+    else
+    {
         group->setDelayBeforeTimeoutSec(static_cast<double>(in_wait_packet_timeout_sec));
 
     #ifdef NET_PACKETS_GROUPS_DEBUG

@@ -37,6 +37,7 @@ const uint16_t NetCommandHeader::g_function_number_terminate_acquisition      = 
 const uint16_t NetCommandHeader::g_function_number_retrieve_image             = 1019;
 const uint16_t NetCommandHeader::g_function_number_terminate_image_retrieve   = 1020;
 const uint16_t NetCommandHeader::g_function_number_inquire_acquisition_status = 1017;
+const uint16_t NetCommandHeader::g_function_number_configure_packets          = 1022;
 
 /****************************************************************************************************
  * \fn NetCommandHeader()

@@ -50,6 +50,9 @@ namespace lima
  */
 namespace Spectral 
 {
+    // predefined the internal timer used in the thread
+    class InternalTimer;
+    
 /*
  *  \class CameraAcqThread
  *  \brief This class is used to manage an acquisition
@@ -66,6 +69,16 @@ public:
         Running                  , // data acquisition is running 
         Error                    , // unexpected error
 	};
+
+    // status values
+    typedef enum RunningState
+    {
+        Exposure   , // running an exposure
+        Readout    , // running a readout
+        Retrieve   , // retrieve the image
+        Latency    , // running a latency
+
+    } RunningState;
 
     // Cmd
     enum
@@ -97,11 +110,11 @@ public:
     // Stops the data acquisition
     static void stopAcq();
 
-    // return the singleton
-    static CameraAcqThread * getInstance();
+    // get the current status
+    static int readStatus();
 
-    // return the singleton (const version)
-    static const CameraAcqThread * getConstInstance();
+    // get the current running status in detail
+    static CameraAcqThread::RunningState getRunningState();
 
 protected:
     // Manage an incomming error
@@ -110,7 +123,6 @@ protected:
     // Stops the data acquisition and abort or restart the thread 
     static void applyStopAcq(bool in_restart, bool in_always_abort);
 
-protected:
     // inits the thread
     virtual void init();
 
@@ -124,8 +136,21 @@ private:
     // execute a stop of the acquisition
     void execStopAcq();
 
+    // Manage the acquisition of one image
+    bool imageAcquisition();
+
+    // Manage the reception of one image
+    bool imageReception();
+
+    // Manage the latency wait before the next image
+    bool imageLatency(const InternalTimer & in_start_timer);
+
 private :
+    // allow to force a stop of the thread
     volatile bool m_force_stop;
+
+    // running state in detail
+    volatile RunningState m_running_state;
 
     //------------------------------------------------------------------
     // singleton management

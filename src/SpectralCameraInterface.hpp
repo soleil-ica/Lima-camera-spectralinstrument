@@ -29,7 +29,7 @@ Camera::Status Camera::getStatus() ///< [out] current camera status
 
     Camera::Status result;
 
-    int thread_status = CameraAcqThread::getConstInstance()->getStatus();
+    int thread_status = CameraAcqThread::readStatus();
 
     // error during the acquisition management ?
     // the device becomes in error state.
@@ -41,7 +41,24 @@ Camera::Status Camera::getStatus() ///< [out] current camera status
     // the device is in acquisition.
     if(thread_status == CameraAcqThread::Running)
     {
-        result = Camera::Status::Exposure;
+        // get the current running status in detail
+        CameraAcqThread::RunningState running_state = CameraAcqThread::getRunningState();
+
+        if(running_state == CameraAcqThread::RunningState::Exposure)
+        {
+            result = Camera::Status::Exposure;
+        }
+        else
+        if(running_state == CameraAcqThread::RunningState::Readout)
+        {
+            result = Camera::Status::Readout;
+        }
+        else
+        if((running_state == CameraAcqThread::RunningState::Retrieve) ||
+           (running_state == CameraAcqThread::RunningState::Latency ))
+        {
+            result = Camera::Status::Latency;
+        }
     }
     else
     // the device is not in acquisition or in error, so we can read the hardware camera status
@@ -93,7 +110,7 @@ void Camera::startAcq()
     //================================================================================================
     // before a new acquisition, some data need to be updated
     //================================================================================================
-    // Forceing the acquisition mode to single image mode by sending a command to the hardware
+    // Forcing the acquisition mode to single image mode by sending a command to the hardware
     CameraControl::getInstance()->setAcquisitionMode(NetAnswerGetSettings::AcquisitionMode::SingleImage);
 
     // Change the acquisition type by sending a command to the hardware
@@ -116,6 +133,9 @@ void Camera::startAcq()
     }
 
     CameraControl::getInstance()->setAcquisitionType(acquisition_type);
+
+    // reinit the number of frames
+    setNbFramesAcquired(0);
 
     //================================================================================================
     // starting the acquisition thread

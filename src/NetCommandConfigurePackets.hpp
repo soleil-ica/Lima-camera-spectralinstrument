@@ -21,17 +21,21 @@
 //###########################################################################
 
 //===================================================================================================
-// Class NetImage
+// Class NetCommandConfigurePackets
 //===================================================================================================
 /****************************************************************************************************
- * \fn NetImage()
+ * \fn NetCommandConfigurePackets()
  * \brief  constructor
  * \param  none
  * \return none
  ****************************************************************************************************/
-NetImage::NetImage()
+NetCommandConfigurePackets::NetCommandConfigurePackets()
 {
-    m_packet_name = "Image";
+    m_function_number   = NetCommandHeader::g_function_number_configure_packets; // function to be executed (1000 .. 1999)
+    m_packet_name       = "Command ConfigurePackets";
+    m_is_server_command = false; // some commands are server related, others to a camera
+    m_pixels_per_packet = 512  ; // pixels per packet
+    m_packet_delay_usec = 300  ; // packet sending loop delay in microseconds
 }
 
 /****************************************************************************************************
@@ -40,9 +44,10 @@ NetImage::NetImage()
  * \param  none
  * \return specific packet size
  ****************************************************************************************************/
-std::size_t NetImage::size() const
+std::size_t NetCommandConfigurePackets::size() const
 {
-    return (m_image.size() * sizeof(uint16_t));
+    return sizeof(m_pixels_per_packet) + 
+           sizeof(m_packet_delay_usec);
 }
 
 /****************************************************************************************************
@@ -51,9 +56,9 @@ std::size_t NetImage::size() const
  * \param  none
  * \return total packet size
  ****************************************************************************************************/
-std::size_t NetImage::totalSize() const
+std::size_t NetCommandConfigurePackets::totalSize() const
 {
-    return NetImageHeader::totalSize() + NetImage::size();
+    return NetCommandHeader::totalSize() + NetCommandConfigurePackets::size();
 }
 
 /****************************************************************************************************
@@ -63,48 +68,35 @@ std::size_t NetImage::totalSize() const
  * \param  in_out_memory_size size of the rest of memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetImage::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
+bool NetCommandConfigurePackets::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
 {
-    m_image.resize(in_out_memory_size / sizeof(uint16_t));
-    memcpy((char*)m_image.data(), reinterpret_cast<const char *>(in_out_memory_data), in_out_memory_size);
+    if(in_out_memory_size != NetCommandConfigurePackets::size())
+        return false;
 
-    uint16_t    * ptr = m_image.data();
-    std::size_t   nb  = m_image.size();
+    readData(in_out_memory_data, m_pixels_per_packet);
+    readData(in_out_memory_data, m_packet_delay_usec);
 
-    while(nb--)
-    {
-        *ptr++ = UINT16_TO_HOST(*ptr);
-    }
+    in_out_memory_size -= NetCommandConfigurePackets::size();
 
-    in_out_memory_data += NetImage::size();
-
-    if(in_out_memory_size == NetImage::size())
-    {
-        in_out_memory_size = 0;
-    }
-    else
-    {
-        in_out_memory_size -= NetImage::size();
-    }
-
-    return (!in_out_memory_size); // should have a zero value (no more data to be read)
+    return true;
 }
 
 /****************************************************************************************************
- * \fn bool write(uint8_t * out_memory_data, std::size_t & in_out_memory_size)
+ * \fn bool write(uint8_t * out_memory_data, std::size_t in_memory_size)
  * \brief  write the class members values into a memory block
  * \param  in_out_memory_data start of the memory block to be filled (moves to the next data block)
  * \param  in_out_memory_size size of the rest of the memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetImage::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
+bool NetCommandConfigurePackets::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
 {
-    if(in_out_memory_size != NetImage::size())
+    if(in_out_memory_size < NetCommandConfigurePackets::size())
         return false;
 
-    memcpy(reinterpret_cast<char *>(in_out_memory_data), m_image.data(), in_out_memory_size);  
+    writeData(in_out_memory_data, m_pixels_per_packet);
+    writeData(in_out_memory_data, m_packet_delay_usec);
 
-    in_out_memory_size -= NetImage::size();
+    in_out_memory_size -= NetCommandConfigurePackets::size();
 
     return true;
 }
@@ -116,27 +108,27 @@ bool NetImage::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory
  * \param  in_out_memory_size size of the rest of memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetImage::totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
+bool NetCommandConfigurePackets::totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
 {
-    if(!NetImageHeader::totalRead(in_out_memory_data, in_out_memory_size))
+    if(!NetCommandHeader::totalRead(in_out_memory_data, in_out_memory_size))
         return false;
 
-    return NetImage::read(in_out_memory_data, in_out_memory_size);
+    return NetCommandConfigurePackets::read(in_out_memory_data, in_out_memory_size);
 }
 
 /****************************************************************************************************
- * \fn bool write(uint8_t * out_memory_data, std::size_t & in_out_memory_size)
+ * \fn bool write(uint8_t * out_memory_data, std::size_t in_out_memory_size) const
  * \brief  totally write the class members values into a memory block
  * \param  in_out_memory_data start of the memory block to be filled (moves to the next data block)
  * \param  in_out_memory_size size of the rest of the memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetImage::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
+bool NetCommandConfigurePackets::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
 {
-    if(!NetImageHeader::totalWrite(in_out_memory_data, in_out_memory_size))
+    if(!NetCommandHeader::totalWrite(in_out_memory_data, in_out_memory_size))
         return false;
 
-    return NetImage::write(in_out_memory_data, in_out_memory_size);
+    return NetCommandConfigurePackets::write(in_out_memory_data, in_out_memory_size);
 }
 
 /****************************************************************************************************
@@ -145,10 +137,11 @@ bool NetImage::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_m
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetImage::log() const
+void NetCommandConfigurePackets::log() const
 {
-    std::cout << "-- NetImage content --" << std::endl;
-    std::cout << "nb pixels in m_image: " << m_image.size() << std::endl;
+    std::cout << "-- NetCommandConfigurePackets content --" << std::endl;
+    std::cout << "m_pixels_per_packet: " << (int)m_pixels_per_packet << std::endl;
+    std::cout << "m_packet_delay_usec: " << (int)m_packet_delay_usec << std::endl;
 }
 
 /****************************************************************************************************
@@ -157,33 +150,10 @@ void NetImage::log() const
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetImage::totalLog() const
+void NetCommandConfigurePackets::totalLog() const
 {
-    NetImageHeader::totalLog();
-    NetImage::log();
-}
-
-/****************************************************************************************************
- * \fn bool copy() const
- * \brief  copy the image part into a destination buffer
- * \param  in_out_buffer destination copy buffer 
- * \param  in_buffer_dim destination buffer data
- * \return true if the copy was a success, else false
- ****************************************************************************************************/
-bool NetImage::copy(void * in_out_buffer, lima::FrameDim & in_buffer_dim) const
-{
-    // check the image type
-    if((static_cast<NetCommandRetrieveImage::TransfertType>(m_image_type) != NetCommandRetrieveImage::TransfertType::TransfertU16) ||
-       (in_buffer_dim.getDepth() != 2)) // 16 bits only at the moment
-        return false;
-
-    // compute the position in the destination buffer
-    uint16_t * dest = static_cast<uint16_t *>(in_out_buffer) + m_offset;
-
-    // copy the image part
-    memcpy(reinterpret_cast<char *>(dest), 
-           reinterpret_cast<const char *>(m_image.data()),
-           m_image.size() * sizeof(uint16_t)); 
+    NetCommandHeader::totalLog();
+    NetCommandConfigurePackets::log();
 }
 
 //###########################################################################

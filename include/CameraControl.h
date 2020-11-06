@@ -56,6 +56,7 @@
 #include "NetPackets.h"
 #include "ProtectedList.h"
 #include "NetPacketsGroups.h"
+#include "CameraControlInit.h"
 
 // LIMA 
 #include "lima/Debug.h"
@@ -94,17 +95,11 @@ class CameraControl : public CameraSingleton<CameraControl>
         } DetectorStatus;
 
     public:
-        // configure the connection timeout in seconds
-        void setConnectionTimeout(int in_connection_timeout_sec);
+        // Get the delay in milli-seconds between two tries to check if the acquisition is finished
+        int getDelayToCheckAcqEndMsec() const;
 
-        // configure the reception timeout in seconds
-        void setReceptionTimeout(int in_reception_timeout_sec);
-
-        // configure the wait packet timeout in seconds
-        void setWaitPacketTimeout(int in_wait_packet_timeout_sec);
-
-        // configure the camera identifier
-        void setCameraIdentifier(int in_camera_identifier);
+        // Get the delay in milli-seconds between two sends of inquire status commands
+        int getInquireAcqStatusDelayMsec() const;
 
         // get the latest hardware status
         CameraControl::DetectorStatus getLatestStatus() const;
@@ -193,6 +188,9 @@ class CameraControl : public CameraSingleton<CameraControl>
         // get a new data packet if there is one received
         bool getDataPacket(uint16_t in_data_type, NetGenericHeader * & out_packet);
 
+        // get a new acquisition status packet if there is one received
+        bool getAcquisitionStatusPacket(NetGenericHeader * & out_packet);
+
         // flush old acknowledge packets
         void flushAcknowledgePackets();
 
@@ -201,6 +199,9 @@ class CameraControl : public CameraSingleton<CameraControl>
 
         // flush old image packets
         void flushImagePackets();
+
+        // configure the wait timeout in seconds for the acquire command execution
+        void computeTimeoutForAcquireCommand();
 
        /**************************************************************************************************
         * COMMANDS MANAGEMENT
@@ -236,7 +237,7 @@ class CameraControl : public CameraSingleton<CameraControl>
         bool acquire(bool in_sync);
 
         // Check if the acquisition is finished (command done received ?)
-        bool checkEndOfAcquisition(bool & out_error_occured);
+        bool checkEndOfAcquisition(bool & out_error_occurred);
 
         // Stop the acquisition by sending a command to the hardware
         bool terminateAcquisition();
@@ -250,14 +251,14 @@ class CameraControl : public CameraSingleton<CameraControl>
         // Inquire the acquisition status by sending a command to the hardware
         bool inquireAcquisitionStatus();
 
+        // Change the packets settings by sending a command to the hardware
+        bool configurePackets(uint16_t in_pixels_per_packet, uint16_t in_packet_delay_usec);
+
        /***************************************************************************************************
         * SINGLETON MANAGEMENT
         ***************************************************************************************************/
         // Create the singleton instance
-        static void create(int in_camera_identifier      ,
-                           int in_connection_timeout_sec ,
-                           int in_reception_timeout_sec  ,
-                           int in_wait_packet_timeout_sec);
+        static void create(const CameraControlInit & in_init_parameters);
 
     protected:
         // send a tcp/ip packet
@@ -285,6 +286,13 @@ class CameraControl : public CameraSingleton<CameraControl>
                                       std::vector<uint8_t>   & in_out_net_buffer,
                                       int32_t                & out_error        );
 
+        // Receive an image part sub packet with a specific lenght
+        bool receiveImageSubPacket(const NetGenericHeader & in_packet             ,
+                                   const NetImageHeader   & in_image_header_packet,
+                                   NetImage               * out_packet            ,
+                                   std::vector<uint8_t>   & in_out_net_buffer     ,
+                                   int32_t                & out_error             );
+
         // Fill the final packet with the data stored in the buffer
         bool FillFullPacket(NetGenericHeader           * out_packet   , 
                             const std::vector<uint8_t> & in_net_buffer,
@@ -309,10 +317,7 @@ class CameraControl : public CameraSingleton<CameraControl>
 
     private:
         // constructor
-        explicit CameraControl(int in_camera_identifier      ,
-                               int in_connection_timeout_sec ,
-                               int in_reception_timeout_sec  ,
-                               int in_wait_packet_timeout_sec);
+        explicit CameraControl(const CameraControlInit & in_init_parameters);
 
         // destructor (needs to be virtual)
         virtual ~CameraControl();
@@ -360,17 +365,8 @@ class CameraControl : public CameraSingleton<CameraControl>
         // true if connected
         bool m_is_connected; 
 
-        // connection timeout in seconds
-        int m_connection_timeout_sec;
-
-        // reception timeout in seconds
-        int m_reception_timeout_sec;
-
-        // wait packet timeout in seconds
-        int m_wait_packet_timeout_sec;
-
-        // camera identifier (starts at 1)
-        int m_camera_identifier;
+        // init parameters (timeout, delays, ...)
+        CameraControlInit m_init_parameters;
 
         // latest detector status (periodically updated)
         DetectorStatus m_latest_status;

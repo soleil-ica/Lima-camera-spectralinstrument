@@ -52,27 +52,26 @@ using namespace lima::Spectral;
 
 //#define SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
 //#define SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
+//#define SPECTRAL_CAMERA_CONTROL_ACTIVATE_LIGHT_PACKET_TRACE
 
+//------------------------------------------------------------------
+// CameraControl class
+//------------------------------------------------------------------
 /****************************************************************************************************
- * \fn CameraControl(int in_camera_identifier, int in_connection_timeout_sec, int in_reception_timeout_sec, int in_wait_packet_timeout_sec)
+ * \fn CameraControl(const CameraControlInit & in_init_parameters)
  * \brief  constructor
- * \param  in_camera_identifier camera identifier
- * \param  in_connection_timeout_sec  connection timeout in seconds
- * \param  in_reception_timeout_sec   reception timeout in seconds
- * \param  in_wait_packet_timeout_sec wait packet timeout in seconds
+ * \param  in_init_parameters init parameters (timeout, delays, ...)
  * \return none
  ****************************************************************************************************/
-CameraControl::CameraControl(int in_camera_identifier      ,
-                             int in_connection_timeout_sec ,
-                             int in_reception_timeout_sec  ,
-                             int in_wait_packet_timeout_sec)
+CameraControl::CameraControl(const CameraControlInit & in_init_parameters)
 {
     DEB_CONSTRUCTOR();
 
-    setConnectionTimeout(in_connection_timeout_sec );
-    setReceptionTimeout (in_reception_timeout_sec  );
-    setWaitPacketTimeout(in_wait_packet_timeout_sec);
-    setCameraIdentifier (in_camera_identifier      );
+    // binary copy of init parameters (works because there is no pointers)
+    m_init_parameters = in_init_parameters;
+
+    // changing all the groups'timeout delays...
+    m_packets_container.setDelayBeforeTimeoutSec(m_init_parameters.m_wait_packet_timeout_sec);
 
     // default values
     m_is_connected  = false;
@@ -126,50 +125,37 @@ CameraControl::~CameraControl()
 }
 
 /****************************************************************************************************
- * \fn void setConnectionTimeout(int in_connection_timeout_sec)
- * \brief  configure the connection timeout in seconds
- * \param  in_connection_timeout_sec new connection timeout in seconds
+ * \fn void computeTimeoutForAcquireCommand()
+ * \brief  configure the wait timeout in seconds for the acquire command execution
+ * \param  none
  * \return none
  ****************************************************************************************************/
-void CameraControl::setConnectionTimeout(int in_connection_timeout_sec)
+void CameraControl::computeTimeoutForAcquireCommand()
 {
-    m_connection_timeout_sec = in_connection_timeout_sec;
+    int wait_packet_timeout_sec = m_init_parameters.m_maximum_readout_time_sec + static_cast<int>(m_exposure_time_msec / 1000);
+    m_packets_container.setDelayBeforeTimeoutSec(NetCommandHeader::g_function_number_acquire, wait_packet_timeout_sec);
 }
 
 /****************************************************************************************************
- * \fn void setReceptionTimeout(int in_reception_timeout_sec)
- * \brief  configure the reception timeout in seconds
- * \param  in_reception_timeout_sec new reception timeout in seconds
- * \return none
+ * \fn int getDelayToCheckAcqEndMsec() const
+ * \brief  Get the delay in milli-seconds between two tries to check if the acquisition is finished
+ * \param  none
+ * \return delay in milli-seconds between two tries to check if the acquisition is finished
  ****************************************************************************************************/
-void CameraControl::setReceptionTimeout(int in_reception_timeout_sec)
+int CameraControl::getDelayToCheckAcqEndMsec() const
 {
-    m_reception_timeout_sec = in_reception_timeout_sec;
+    return m_init_parameters.m_delay_to_check_acq_end_msec;
 }
 
 /****************************************************************************************************
- * \fn void setWaitPacketTimeout(int in_wait_packet_timeout_sec)
- * \brief  configure the wait packet timeout in seconds
- * \param  in_wait_packet_timeout_sec wait packet timeout in seconds
- * \return none
+ * \fn int getInquireAcqStatusDelayMsec() const
+ * \brief  Get the delay in milli-seconds between two sends of inquire status commands
+ * \param  none
+ * \return delay in milli-seconds between two sends of inquire status commands
  ****************************************************************************************************/
-void CameraControl::setWaitPacketTimeout(int in_wait_packet_timeout_sec)
+int CameraControl::getInquireAcqStatusDelayMsec() const
 {
-    m_wait_packet_timeout_sec = in_wait_packet_timeout_sec;
-
-    // changing all the groups'timeout delays...
-    m_packets_container.setDelayBeforeTimeoutSec(m_wait_packet_timeout_sec);
-}
-
-/****************************************************************************************************
- * \fn void setCameraIdentifier(int in_camera_identifier)
- * \brief  configure the camera identifier
- * \param  in_camera_identifier camera identifier
- * \return none
- ****************************************************************************************************/
-void CameraControl::setCameraIdentifier(int in_camera_identifier)
-{
-    m_camera_identifier = in_camera_identifier;
+    return m_init_parameters.m_inquire_acq_status_delay_msec;
 }
 
 /****************************************************************************************************
@@ -440,7 +426,7 @@ bool CameraControl::notBlockingConnect(struct sockaddr_in & in_out_sa, int in_so
     // check if we had a socket error
     if(error)
     {  
-        DEB_ERROR() << "socket error occured: " << error << ": " << strerror(error);
+        DEB_ERROR() << "socket error occurred: " << error << ": " << strerror(error);
         errno = error;
         return false;
     }
@@ -514,7 +500,7 @@ void CameraControl::connect(const std::string & in_hostname, int in_port)
 	endhostent();
 
     // connect try
-    if(!notBlockingConnect(m_server_name, m_sock, m_connection_timeout_sec))
+    if(!notBlockingConnect(m_server_name, m_sock, m_init_parameters.m_connection_timeout_sec))
     {
 		close(m_sock);
 
@@ -551,7 +537,7 @@ void CameraControl::connect(const std::string & in_hostname, int in_port)
 
     // set the select timeout
     struct timeval time_out;
-    time_out.tv_sec  = m_reception_timeout_sec;
+    time_out.tv_sec  = m_init_parameters.m_reception_timeout_sec;
     time_out.tv_usec = 0;
     
     if(setsockopt(m_sock, SOL_SOCKET, SO_RCVTIMEO, &time_out, sizeof(time_out)) < 0)
@@ -659,7 +645,7 @@ bool CameraControl::sendCommand(NetCommandHeader * in_out_command, int32_t & out
 
     // init command members
     in_out_command->initPacketLenght();
-    in_out_command->initCameraIdentifier(m_camera_identifier);
+    in_out_command->initCameraIdentifier(m_init_parameters.m_camera_identifier);
     in_out_command->initSpecificDataLenght();
 
 #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
@@ -713,7 +699,7 @@ bool CameraControl::receive(uint8_t * out_buffer, const int in_buffer_lenght, in
         {
             if(errno == EAGAIN)
             {      
-                DEB_WARNING() << "CameraControl::receive(): TIMEOUT occured!";
+                DEB_WARNING() << "CameraControl::receive(): TIMEOUT occurred!";
             }
             else
             {
@@ -837,6 +823,45 @@ bool CameraControl::receiveSpecificSubPacket(const NetGenericHeader & in_packet 
 }
 
 /****************************************************************************************************
+ * \fn bool receiveImageSubPacket(const NetGenericHeader & in_packet, const NetGenericAnswer & in_answer_packet, NetGenericHeader * out_packet, std::vector<uint8_t> & in_out_net_buffer, int32_t & out_error)
+ * \brief  Receive an image part sub packet with a specific lenght
+ * \param  in_packet              already received sub packet
+ * \param  in_image_header_packet already received image header packet
+ * \param  out_packet             image to receive 
+ * \param  in_out_net_buffer      packet buffer (will grow during the process because data will be concatenated)
+ * \param  out_error              error code
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::receiveImageSubPacket(const NetGenericHeader & in_packet             ,
+                                          const NetImageHeader   & in_image_header_packet,
+                                          NetImage               * out_packet            ,
+                                          std::vector<uint8_t>   & in_out_net_buffer     ,
+                                          int32_t                & out_error             )
+{
+    DEB_MEMBER_FUNCT();
+
+    const std::size_t previous_size = in_out_net_buffer.size();
+
+    // increasing the buffer size
+    in_out_net_buffer.resize(previous_size + in_image_header_packet.m_specific_data_lenght, 0);
+
+    if(!receive(in_out_net_buffer.data() + previous_size, in_image_header_packet.m_specific_data_lenght, out_error))
+        return false;
+
+    // filling the buffer data into the header members
+    const uint8_t * memory_data = in_out_net_buffer.data() + previous_size;
+    std::size_t     memory_size = in_image_header_packet.m_specific_data_lenght;
+
+    if(!out_packet->read(memory_data, memory_size))
+    {
+        DEB_ERROR() << "CameraControl::receiveImageSubPacket - Error during the buffer copy into the sub packet!";
+        return false;
+    }
+
+    return true;
+}
+
+/****************************************************************************************************
  * \fn bool FillFullPacket(NetGenericHeader * out_packet, const std::vector<uint8_t> & in_net_buffer, int32_t & out_error)
  * \brief  Fill the final packet with the data stored in the buffer
  * \param  out_packet        generic sub packet to be filled
@@ -895,13 +920,14 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
 
     // checking the camera identifier
     if((header.m_camera_identifier != NetCommandHeader::g_server_command_identifier) &&
-       (header.m_camera_identifier != m_camera_identifier))
+       (header.m_camera_identifier != m_init_parameters.m_camera_identifier))
     {
         DEB_ERROR() << "CameraControl::receivePacket - Incorrect camera indentifier found into the packet header!";
         return false;
     }
 
     // checking the packet identifier to determine the next data block to read
+    //===========================================================================================
     // check if this is a command packet
     if(header.isCommandPacket())
     {
@@ -909,6 +935,7 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
         return false;
     }
     else
+    //===========================================================================================
     // check if this is a acknowledge packet
     if(header.isAcknowledgePacket())
     {
@@ -925,6 +952,7 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
         out_packet = new NetAcknowledge();
     }
     else
+    //===========================================================================================
     // check if this is a data packet
     if(header.isDataPacket())
     {
@@ -939,7 +967,7 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
 
         // checking the error code
     #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
-        if(answer.m_error_code)
+        if(answer.hasError())
         {
             DEB_TRACE() << "received an error into the " << out_packet->m_packet_name << " packet.";
         }
@@ -1006,6 +1034,7 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
             out_packet = new NetAnswerAcquisitionStatus();
         }
         else
+        //===========================================================================================
         // command done
         if(answer.isCommandDonePacket())
         {
@@ -1054,6 +1083,27 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
                 out_packet = new NetAnswerAcquire();
             }
             else
+            // configure packets settigs
+            if(command_done.m_function_number == NetCommandHeader::g_function_number_configure_packets)
+            {
+                // it's ok, we can "return" the packet
+                out_packet = new NetAnswerConfigurePackets();
+            }
+            else
+            // software bug during an acquisition, we can receive incorrect function number for end of acquisition command done packet!... 
+            if((command_done.m_function_number == NetCommandHeader::g_function_number_get_status                ) ||
+               (command_done.m_function_number == NetCommandHeader::g_function_number_get_settings              ) ||
+               (command_done.m_function_number == NetCommandHeader::g_function_number_get_camera_parameters     ) ||
+               (command_done.m_function_number == NetCommandHeader::g_function_number_inquire_acquisition_status))
+            {
+            #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_LIGHT_PACKET_TRACE
+                DEB_WARNING() << "received an incorrect command done packet for a function: " << command_done.m_function_number;
+            #endif
+
+                // it's ok, we can "return" the packet
+                out_packet = new NetAnswerAcquire();
+            }
+            else
             // terminate acquisition
             if(command_done.m_function_number == NetCommandHeader::g_function_number_terminate_acquisition)
             {
@@ -1069,7 +1119,7 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
             }
             else
             {
-                DEB_ERROR() << "CameraControl::receivePacket - Unknown command done function type!";
+                DEB_ERROR() << "CameraControl::receivePacket - Unknown command done function type: " << command_done.m_function_number << "!";
                 return false;
             }
         }
@@ -1080,11 +1130,34 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
         }
     }
     else
+    //===========================================================================================
     // check if this is an image packet
     if(header.isImagePacket())
     {
-        DEB_ERROR() << "CameraControl::receivePacket - Not managed packet type!";
-        return false;
+        NetImageHeader image_header;
+
+        if(!receiveGenericSubPacket(header, &image_header,  net_buffer, false, out_error))
+            return false;
+
+    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
+        image_header.NetImageHeader::log();
+    #endif
+
+        // checking the error code
+    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
+        if(image_header.hasError())
+        {
+            DEB_TRACE() << "received an error into the " << out_packet->m_packet_name << " packet.";
+        }
+    #endif
+
+        NetImage image;
+
+        if(!receiveImageSubPacket(header, image_header, &image,  net_buffer, out_error))
+            return false;
+
+        // it's ok, we can "return" the packet
+        out_packet = new NetImage();
     }
     else
     {
@@ -1130,6 +1203,10 @@ void CameraControl::addPacket(NetGenericHeader * in_packet)
     if(in_packet->isAcknowledgePacket() || in_packet->isImagePacket())
     {
         group_id = static_cast<NetPacketsGroupId>(in_packet->m_packet_identifier);
+
+    #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_LIGHT_PACKET_TRACE
+        DEB_TRACE() << "> receive Acknowledge packet " << group_id;
+    #endif
     }
     // check if this is a data packet
     else
@@ -1137,15 +1214,33 @@ void CameraControl::addPacket(NetGenericHeader * in_packet)
     {
         NetGenericAnswer * generic_answer = dynamic_cast<NetGenericAnswer *>(in_packet);
 
-        // check if this is a commamd done packet
+        // check if this is a command done packet
         if(generic_answer->isCommandDonePacket())
         {
             NetAnswerCommandDone * command_done = dynamic_cast<NetAnswerCommandDone *>(generic_answer);
+
+            // software bug during an acquisition, we can receive incorrect function number for end of acquisition command done packet!... 
+            if((command_done->m_function_number == NetCommandHeader::g_function_number_get_status                ) ||
+               (command_done->m_function_number == NetCommandHeader::g_function_number_get_settings              ) ||
+               (command_done->m_function_number == NetCommandHeader::g_function_number_get_camera_parameters     ) ||
+               (command_done->m_function_number == NetCommandHeader::g_function_number_inquire_acquisition_status))
+            {
+                command_done->m_function_number = NetCommandHeader::g_function_number_acquire;
+            }
+
             group_id = command_done->m_function_number;
+
+        #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_LIGHT_PACKET_TRACE
+            DEB_TRACE() << "> receive CommandDone packet " << group_id;
+        #endif
         }
         else
         {
             group_id = generic_answer->m_data_type;
+
+        #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_LIGHT_PACKET_TRACE
+            DEB_TRACE() << "> receive data packet..." << group_id;
+        #endif
         }
     }
     else
@@ -1171,7 +1266,7 @@ void CameraControl::addPacket(NetGenericHeader * in_packet)
  * \brief  Wait for a new packet to be received
  * \param  in_group_id type of packet
  * \param  out_packet  received packet
- * \return true if succeed, false in case of error
+ * \return true if succeed, false in case of error (timeout)
  ****************************************************************************************************/
 bool CameraControl::waitPacket(NetPacketsGroupId in_group_id, NetGenericHeader * & out_packet)
 {
@@ -1326,6 +1421,17 @@ bool CameraControl::getDataPacket(uint16_t in_data_type, NetGenericHeader * & ou
 }
 
 /****************************************************************************************************
+ * \fn bool getAcquisitionStatusPacket(NetGenericHeader * & out_packet)
+ * \brief  get a new acquisition status packet if there is one received
+ * \param  out_packet   received packet
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::getAcquisitionStatusPacket(NetGenericHeader * & out_packet)
+{
+    return getDataPacket(NetGenericAnswer::g_data_type_acquisition_status, out_packet);
+}
+
+/****************************************************************************************************
  * \fn void flushAcknowledgePackets()
  * \brief  flush old acknowledge packets
  * \param  none
@@ -1355,7 +1461,7 @@ void CameraControl::flushAcquisitionStatusPackets()
 {
     NetGenericHeader * old_packet;
 
-    while(getDataPacket(NetGenericAnswer::g_data_type_acquisition_status, old_packet))
+    while(getAcquisitionStatusPacket(old_packet))
     {
     #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
         DEB_WARNING() << "Flushing old acquisition status packet!";
@@ -2064,11 +2170,11 @@ bool CameraControl::acquire(bool in_sync)
 {
     DEB_MEMBER_FUNCT();
 
-    int32_t            error           = 0    ;
-    bool               result          = false;
-    NetGenericHeader * second_packet   = NULL ;
-    NetAnswerAcquire * answer_packet   = NULL ;
-    NetCommandHeader * command         = new NetCommandAcquire();
+    int32_t            error         = 0    ;
+    bool               result        = false;
+    NetGenericHeader * second_packet = NULL ;
+    NetAnswerAcquire * answer_packet = NULL ;
+    NetCommandHeader * command       = new NetCommandAcquire();
 
     // first flush old InquireAcquisitionStatus packets (should not occur!)
     flushAcquisitionStatusPackets();
@@ -2106,17 +2212,17 @@ done:
 /****************************************************************************************************
  * \fn bool checkEndOfAcquisition()
  * \brief  Check if the acquisition is finished (command done received ?)
- * \param  out_error_occured if the acquisition is finished, give an error state
+ * \param  out_error_occurred if the acquisition is finished, give an error state
  * \return true if the acquisition is finished, false if it is not
  ****************************************************************************************************/
-bool CameraControl::checkEndOfAcquisition(bool & out_error_occured)
+bool CameraControl::checkEndOfAcquisition(bool & out_error_occurred)
 {
     DEB_MEMBER_FUNCT();
 
     NetGenericHeader * packet = NULL;
     bool result = false;
     
-    out_error_occured = false;
+    out_error_occurred = false;
 
     // check the command done reception
     if(getCommandDonePacket(NetCommandHeader::g_function_number_acquire, packet))
@@ -2124,7 +2230,7 @@ bool CameraControl::checkEndOfAcquisition(bool & out_error_occured)
         // we need to manage the data 
         NetAnswerAcquire * answer_packet = dynamic_cast<NetAnswerAcquire *>(packet);
 
-        out_error_occured = answer_packet->hasError();
+        out_error_occurred = answer_packet->hasError();
         result = true;
     }
 
@@ -2262,27 +2368,64 @@ bool CameraControl::inquireAcquisitionStatus()
     return result;
 }
 
+/****************************************************************************************************
+ * \fn bool configurePackets(uint16_t in_pixels_per_packet, uint16_t in_packet_delay_usec)
+ * \brief  Change the packets settings by sending a command to the hardware
+ * \param  in_pixels_per_packet pixels per packet
+ * \param  in_packet_delay_usec packet sending loop delay in microseconds
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::configurePackets(uint16_t in_pixels_per_packet,
+                                     uint16_t in_packet_delay_usec)
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t            error           = 0    ;
+    bool               result          = false;
+    NetGenericHeader * second_packet   = NULL ;
+    NetCommandHeader * command         = new NetCommandConfigurePackets();
+    
+    NetAnswerConfigurePackets  * answer_packet            = NULL ;
+    NetCommandConfigurePackets * command_acquisition_type = dynamic_cast<NetCommandConfigurePackets *>(command);
+
+    command_acquisition_type->m_pixels_per_packet = in_pixels_per_packet;
+    command_acquisition_type->m_packet_delay_usec = in_packet_delay_usec;
+
+    // send the command and treat the acknowledge
+    if(!sendCommandWithAck(command, error))
+        goto done;
+
+    // wait for the command done
+    if(!waitCommandDonePacket(NetCommandHeader::g_function_number_configure_packets, second_packet))
+        goto done;
+
+    // we need to manage the data 
+    answer_packet = dynamic_cast<NetAnswerConfigurePackets *>(second_packet);
+
+    if(!answer_packet->hasError())
+    {
+        result = true;
+    }
+
+done:
+    if(second_packet != NULL) delete second_packet;
+    if(command       != NULL) delete command      ;
+
+    return result;
+}
+
 /**************************************************************************************************
  * SINGLETON MANAGEMENT
  **************************************************************************************************/
 /****************************************************************************************************
- * \fn void create(int in_camera_identifier, int in_connection_timeout_sec, int in_reception_timeout_sec, int in_wait_packet_timeout_sec)
+ * \fn void create(const CameraControlInit & in_init_parameters)
  * \brief  Create the singleton instance
- * \param  in_camera_identifier camera identifier
- * \param  in_connection_timeout_sec  connection timeout in seconds
- * \param  in_reception_timeout_sec   reception timeout in seconds
- * \param  in_wait_packet_timeout_sec wait packet timeout in seconds
+ * \param  in_init_parameters init parameters (timeout, delays, ...)
  * \return none
  ****************************************************************************************************/
-void CameraControl::create(int in_camera_identifier      ,
-                           int in_connection_timeout_sec ,
-                           int in_reception_timeout_sec  ,
-                           int in_wait_packet_timeout_sec)
+void CameraControl::create(const CameraControlInit & in_init_parameters)
 {
-    init(new CameraControl(in_camera_identifier      ,
-                           in_connection_timeout_sec ,
-                           in_reception_timeout_sec  ,
-                           in_wait_packet_timeout_sec));
+    init(new CameraControl(in_init_parameters));
 }
 
 //###########################################################################

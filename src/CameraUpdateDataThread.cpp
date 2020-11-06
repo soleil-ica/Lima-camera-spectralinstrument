@@ -165,17 +165,17 @@ void CameraUpdateDataThread::execStartUpdate()
     // m_force_stop can be set to true also with an error hardware camera status
     while(!m_force_stop)
     {
-        Camera::getInstance()->updateData();
+        if(!Camera::getInstance()->updateData())
+        {
+            setStatus(CameraUpdateDataThread::Error);
+            std::string error_text = "Could not update detector state!";
+            manageError(error_text);
+            break;
+        }
 
         // wait a few mseconds
         usleep(data_update_delay_msec * 1000);
     }
-
-/*
-setStatus(CameraUpdateDataThread::Error);
-std::string error_text = "Could not stop real time acquisition!";
-manageError(error_text);
-return;*/
 
     // change the thread status only if the thread is not in error
     if(getStatus() == CameraUpdateDataThread::Running)

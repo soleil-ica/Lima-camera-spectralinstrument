@@ -21,17 +21,37 @@
 //###########################################################################
 
 //===================================================================================================
-// Class NetImage
+// Class NetImageHeader
 //===================================================================================================
 /****************************************************************************************************
- * \fn NetImage()
+ * \fn NetImageHeader()
  * \brief  constructor
  * \param  none
  * \return none
  ****************************************************************************************************/
-NetImage::NetImage()
+NetImageHeader::NetImageHeader()
 {
-    m_packet_name = "Image";
+    m_packet_name          = "ImageHeader";
+    m_error_code           = 0; // 0 = no error
+    m_image_identifier     = 0; // a number unique to this image
+    m_image_type           = 0; // 0=U16, 1=I16, 3=I32, 4=SGL
+    m_serial_lenght        = 0; // number of columns in the image
+    m_parallel_lenght      = 0; // number of rows in the image
+    m_total_nb_packets     = 0; // total number of packets in this image
+    m_current_packets_nb   = 0; // number (0..N) of currently transmitted package
+    m_offset               = 0; // packet’s offset into the linear image array
+    m_specific_data_lenght = 0; // length of Image structure that is following in bytes
+}
+
+/****************************************************************************************************
+ * \fn bool hasError()
+ * \brief  check if there is an error
+ * \param  none
+ * \return true if there is an error
+ ****************************************************************************************************/
+bool NetImageHeader::hasError() const
+{
+    return (m_error_code != 0);
 }
 
 /****************************************************************************************************
@@ -40,9 +60,17 @@ NetImage::NetImage()
  * \param  none
  * \return specific packet size
  ****************************************************************************************************/
-std::size_t NetImage::size() const
+std::size_t NetImageHeader::size() const
 {
-    return (m_image.size() * sizeof(uint16_t));
+    return sizeof(m_error_code          ) + 
+           sizeof(m_image_identifier    ) + 
+           sizeof(m_image_type          ) +
+           sizeof(m_serial_lenght       ) +
+           sizeof(m_parallel_lenght     ) +
+           sizeof(m_total_nb_packets    ) +
+           sizeof(m_current_packets_nb  ) +
+           sizeof(m_offset              ) +
+           sizeof(m_specific_data_lenght);
 }
 
 /****************************************************************************************************
@@ -51,9 +79,9 @@ std::size_t NetImage::size() const
  * \param  none
  * \return total packet size
  ****************************************************************************************************/
-std::size_t NetImage::totalSize() const
+std::size_t NetImageHeader::totalSize() const
 {
-    return NetImageHeader::totalSize() + NetImage::size();
+    return NetGenericHeader::totalSize() + NetImageHeader::size();
 }
 
 /****************************************************************************************************
@@ -63,31 +91,24 @@ std::size_t NetImage::totalSize() const
  * \param  in_out_memory_size size of the rest of memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetImage::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
+bool NetImageHeader::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
 {
-    m_image.resize(in_out_memory_size / sizeof(uint16_t));
-    memcpy((char*)m_image.data(), reinterpret_cast<const char *>(in_out_memory_data), in_out_memory_size);
+    if(in_out_memory_size < NetImageHeader::size())
+        return false;
 
-    uint16_t    * ptr = m_image.data();
-    std::size_t   nb  = m_image.size();
+    readData(in_out_memory_data, m_error_code          );
+    readData(in_out_memory_data, m_image_identifier    );
+    readData(in_out_memory_data, m_image_type          );
+    readData(in_out_memory_data, m_serial_lenght       );
+    readData(in_out_memory_data, m_parallel_lenght     );
+    readData(in_out_memory_data, m_total_nb_packets    );
+    readData(in_out_memory_data, m_current_packets_nb  );
+    readData(in_out_memory_data, m_offset              );
+    readData(in_out_memory_data, m_specific_data_lenght);
 
-    while(nb--)
-    {
-        *ptr++ = UINT16_TO_HOST(*ptr);
-    }
+    in_out_memory_size -= NetImageHeader::size();
 
-    in_out_memory_data += NetImage::size();
-
-    if(in_out_memory_size == NetImage::size())
-    {
-        in_out_memory_size = 0;
-    }
-    else
-    {
-        in_out_memory_size -= NetImage::size();
-    }
-
-    return (!in_out_memory_size); // should have a zero value (no more data to be read)
+    return true;
 }
 
 /****************************************************************************************************
@@ -97,14 +118,22 @@ bool NetImage::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_m
  * \param  in_out_memory_size size of the rest of the memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetImage::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
+bool NetImageHeader::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
 {
-    if(in_out_memory_size != NetImage::size())
+    if(in_out_memory_size < NetImageHeader::size())
         return false;
 
-    memcpy(reinterpret_cast<char *>(in_out_memory_data), m_image.data(), in_out_memory_size);  
+    writeData(in_out_memory_data, m_error_code          );
+    writeData(in_out_memory_data, m_image_identifier    );
+    writeData(in_out_memory_data, m_image_type          );
+    writeData(in_out_memory_data, m_serial_lenght       );
+    writeData(in_out_memory_data, m_parallel_lenght     );
+    writeData(in_out_memory_data, m_total_nb_packets    );
+    writeData(in_out_memory_data, m_current_packets_nb  );
+    writeData(in_out_memory_data, m_offset              );
+    writeData(in_out_memory_data, m_specific_data_lenght);
 
-    in_out_memory_size -= NetImage::size();
+    in_out_memory_size -= NetImageHeader::size();
 
     return true;
 }
@@ -116,12 +145,12 @@ bool NetImage::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory
  * \param  in_out_memory_size size of the rest of memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetImage::totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
+bool NetImageHeader::totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
 {
-    if(!NetImageHeader::totalRead(in_out_memory_data, in_out_memory_size))
+    if(!NetGenericHeader::totalRead(in_out_memory_data, in_out_memory_size))
         return false;
 
-    return NetImage::read(in_out_memory_data, in_out_memory_size);
+    return NetImageHeader::read(in_out_memory_data, in_out_memory_size);
 }
 
 /****************************************************************************************************
@@ -131,12 +160,12 @@ bool NetImage::totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_
  * \param  in_out_memory_size size of the rest of the memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetImage::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
+bool NetImageHeader::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
 {
-    if(!NetImageHeader::totalWrite(in_out_memory_data, in_out_memory_size))
+    if(!NetGenericHeader::totalWrite(in_out_memory_data, in_out_memory_size))
         return false;
 
-    return NetImage::write(in_out_memory_data, in_out_memory_size);
+    return NetImageHeader::write(in_out_memory_data, in_out_memory_size);
 }
 
 /****************************************************************************************************
@@ -145,10 +174,18 @@ bool NetImage::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_m
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetImage::log() const
+void NetImageHeader::log() const
 {
-    std::cout << "-- NetImage content --" << std::endl;
-    std::cout << "nb pixels in m_image: " << m_image.size() << std::endl;
+    std::cout << "-- NetImageHeader content --" << std::endl;
+    std::cout << "m_error_code: " << m_error_code << std::endl;
+    std::cout << "m_image_identifier: " << m_image_identifier << std::endl;
+    std::cout << "m_image_type: " << m_image_type << std::endl;
+    std::cout << "m_serial_lenght: " << m_serial_lenght << std::endl;
+    std::cout << "m_parallel_lenght: " << m_parallel_lenght << std::endl;
+    std::cout << "m_total_nb_packets: " << m_total_nb_packets << std::endl;
+    std::cout << "m_current_packets_nb: " << m_current_packets_nb << std::endl;
+    std::cout << "m_offset: " << m_offset << std::endl;
+    std::cout << "m_specific_data_lenght: " << m_specific_data_lenght << std::endl;
 }
 
 /****************************************************************************************************
@@ -157,33 +194,10 @@ void NetImage::log() const
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetImage::totalLog() const
+void NetImageHeader::totalLog() const
 {
-    NetImageHeader::totalLog();
-    NetImage::log();
-}
-
-/****************************************************************************************************
- * \fn bool copy() const
- * \brief  copy the image part into a destination buffer
- * \param  in_out_buffer destination copy buffer 
- * \param  in_buffer_dim destination buffer data
- * \return true if the copy was a success, else false
- ****************************************************************************************************/
-bool NetImage::copy(void * in_out_buffer, lima::FrameDim & in_buffer_dim) const
-{
-    // check the image type
-    if((static_cast<NetCommandRetrieveImage::TransfertType>(m_image_type) != NetCommandRetrieveImage::TransfertType::TransfertU16) ||
-       (in_buffer_dim.getDepth() != 2)) // 16 bits only at the moment
-        return false;
-
-    // compute the position in the destination buffer
-    uint16_t * dest = static_cast<uint16_t *>(in_out_buffer) + m_offset;
-
-    // copy the image part
-    memcpy(reinterpret_cast<char *>(dest), 
-           reinterpret_cast<const char *>(m_image.data()),
-           m_image.size() * sizeof(uint16_t)); 
+    NetGenericHeader::totalLog();
+    NetImageHeader::log();
 }
 
 //###########################################################################

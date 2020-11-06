@@ -171,5 +171,5 @@ void Camera::getNbFrames(int & nb_frames) const ///< [out] current number of fra
 void Camera::getNbHwAcquiredFrames(int & nb_acq_frames) const
 { 
     DEB_MEMBER_FUNCT();    
-    nb_acq_frames = static_cast<int>(m_nb_frames_acquired);
+    nb_acq_frames = static_cast<int>(getNbFramesAcquired());
 }
