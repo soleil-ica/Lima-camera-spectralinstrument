@@ -267,6 +267,8 @@ bool CameraAcqThread::imageAcquisition()
 
     DEB_TRACE() << "imageAcquisition for image: " << Camera::getConstInstance()->getNbFramesAcquired();
 
+    const bool inquire_acquisition_status = true;
+
     uint32_t exposure_time_msec = CameraControl::getConstInstance()->getExposureTimeMsec();
 
     // delay in milli-seconds between two tries to check if the acquisition is finished
@@ -313,6 +315,11 @@ bool CameraAcqThread::imageAcquisition()
                 std::string error_text = "Error occurred during real time acquisition!";
                 manageError(error_text);
             }
+            else
+            {
+                DEB_TRACE() << "terminate acquisition for image: " << Camera::getConstInstance()->getNbFramesAcquired();
+                CameraControl::getInstance()->terminateAcquisition();
+            }
             break;
         }
 
@@ -330,7 +337,7 @@ bool CameraAcqThread::imageAcquisition()
         }
 
         // Inquire the acquisition status by sending a command to the hardware
-        if(!waiting_an_acquisition_status)
+        if((inquire_acquisition_status) && (!waiting_an_acquisition_status))
         {
             if(timer.getElapsedTimeMsec() >= inquire_acq_status_delay_msec)
             {
@@ -342,7 +349,7 @@ bool CameraAcqThread::imageAcquisition()
         }
 
         // reception of an acquisition status
-        if(waiting_an_acquisition_status)
+        if((inquire_acquisition_status) && (waiting_an_acquisition_status))
         {
             NetGenericHeader * packet;
 
@@ -362,7 +369,7 @@ bool CameraAcqThread::imageAcquisition()
         }
 
         // wait a few mseconds
-        usleep(delay_to_check_acq_end_msec);
+        usleep(delay_to_check_acq_end_msec * 1000);
     }
 
     return (!error_occurred);
@@ -481,6 +488,10 @@ bool CameraAcqThread::imageReception()
 
                     // increment the number of acquired frames
                     Camera::getInstance()->incrementNbFramesAcquired();
+
+                    DEB_TRACE() << "terminate image retrieve for image (frame_info.acq_frame_nb) : " << (int)frame_info.acq_frame_nb;
+                    CameraControl::getInstance()->terminateImageRetrieve();
+
                     finished = true;
                 }
                 break;
@@ -542,7 +553,7 @@ bool CameraAcqThread::imageLatency(const InternalTimer & in_start_timer)
         DEB_TRACE() << "imageLatency: " << (int)(latency_time_msec - elapsed_time_msec);
 
         // wait a few mseconds
-        usleep(latency_time_msec - elapsed_time_msec);
+        usleep((latency_time_msec - elapsed_time_msec) * 1000);
     }
 
     return true;

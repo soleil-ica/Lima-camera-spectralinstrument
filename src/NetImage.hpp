@@ -175,7 +175,10 @@ bool NetImage::copy(void * in_out_buffer, lima::FrameDim & in_buffer_dim) const
     // check the image type
     if((static_cast<NetCommandRetrieveImage::TransfertType>(m_image_type) != NetCommandRetrieveImage::TransfertType::TransfertU16) ||
        (in_buffer_dim.getDepth() != 2)) // 16 bits only at the moment
+    {
+        std::cout << "NetImage::copy - error for image type: " << m_image_type << std::endl;
         return false;
+    }
 
     // compute the position in the destination buffer
     uint16_t * dest = static_cast<uint16_t *>(in_out_buffer) + m_offset;
@@ -184,6 +187,8 @@ bool NetImage::copy(void * in_out_buffer, lima::FrameDim & in_buffer_dim) const
     memcpy(reinterpret_cast<char *>(dest), 
            reinterpret_cast<const char *>(m_image.data()),
            m_image.size() * sizeof(uint16_t)); 
+
+    return true;
 }
 
 //###########################################################################

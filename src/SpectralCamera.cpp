@@ -78,7 +78,7 @@ Camera::Camera(const std::string & connection_address          ,
     const int data_update_delay_msec        = 1000; // delay between the data update (status, exposure time, etc...) in msec
     const int maximum_readout_time_sec      = 20  ; // maximum readout time in seconds
     const int delay_to_check_acq_end_msec   = 1   ; // delay in milli-seconds between two tries to check if the acquisition is finished
-    const int inquire_acq_status_delay_msec = 100 ; // delay in milli-seconds between two sends of inquire status commands
+    const int inquire_acq_status_delay_msec = 20  ; // delay in milli-seconds between two sends of inquire status commands
 
     m_connection_address           = connection_address          ;
     m_connection_port              = connection_port             ;
