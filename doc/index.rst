@@ -1,11 +1,11 @@
 .. _camera-ufxc:
 
-Aviex camera plugin
+SpectralInstrument camera plugin
 -------------------
 
 Intoduction
 ```````````
-The UFXC32k is a ...
+The SpectralInstrument is a ...
 
 
 Module configuration
@@ -25,7 +25,7 @@ Camera initialisation
 Std capabilites
 ...............
 
-This plugin has been implemented in respect of the mandatory capabilites but with some limitations according to some programmer's choices. We only provide here extra information for a better understanding of the capabilities for the Aviex camera.
+This plugin has been implemented in respect of the mandatory capabilites but with some limitations according to some programmer's choices. We only provide here extra information for a better understanding of the capabilities for the SpectralInstrument camera.
 
 
 Optional capabilites
@@ -40,7 +40,7 @@ No specific hardware configuration is needed.
 How to use
 ````````````
 
-Here is the list of accessible fonctions to configure and use the Aviex detector:
+Here is the list of accessible fonctions to configure and use the SpectralInstrument detector:
 
 .. code-block:: cpp
 
