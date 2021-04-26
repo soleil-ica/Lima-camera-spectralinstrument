@@ -5,12 +5,12 @@
     <parent>
         <groupId>fr.soleil</groupId>
         <artifactId>super-pom-C-CPP</artifactId>
-        <version>RELEASE</version>
+        <version>21.2.5-64</version>
     </parent>
 
     <groupId>fr.soleil.lib.Lima.Camera</groupId>
     <artifactId>LimaSpectral-amd64-Linux-gcc-shared-${mode}</artifactId>
-    <version>0.0.1</version>
+    <version>1.0.0</version>
 
     <packaging>nar</packaging>
     <name>LimaSpectral</name>
@@ -18,8 +18,7 @@
     
     <properties>
         <!-- path to the 64 bits libs -->
-        <!--<libs-64bits>/home/informatique/ica/ica/LIB_EL6_64</libs-64bits>-->
-        <libs-64bits>/media/sf_Partage/DeviceSources-spectral/LIB_EL6_64</libs-64bits>
+        <libs-64bits>/home/informatique/ica/ica/LIB_EL6_64</libs-64bits>
     </properties>
     
     <scm>
@@ -32,7 +31,7 @@
         <dependency>
             <groupId>fr.soleil.lib</groupId>
             <artifactId>LimaCore-amd64-Linux-gcc-shared-${mode}</artifactId>
-            <version>1.7.9</version>
+            <version>1.7.10</version>
         </dependency>
        
     </dependencies>
