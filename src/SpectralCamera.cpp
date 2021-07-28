@@ -366,3 +366,26 @@ bool Camera::allFramesAcquired() const
 {
     return (m_nb_frames_to_acquire == m_nb_frames_acquired);
 }
+
+
+/****************************************************************************************************
+ * \fn bool getCoolerValue() const
+ * \brief  get current Cooler value (On, Off) 
+ * \param  none
+ * \return true is Cooler = On else false
+ ****************************************************************************************************/
+bool Camera::getCoolerValue() const
+{
+    
+}
+
+/****************************************************************************************************
+ * \fn void setCoolerValue() const
+ * \brief  set current Cooler value (On, Off) 
+ * \param  in_cooler_value new Cooler value
+ * \return true is Cooler = On else false
+ ****************************************************************************************************/
+void Camera::setCoolerValue(bool in_cooler_value)
+{
+    
+}

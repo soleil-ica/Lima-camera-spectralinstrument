@@ -22,7 +22,7 @@
 //
 // SpectralCamera.h
 // Created on: October 16, 2020
-// Author: Cédric CASTEL
+// Author: Cï¿½dric CASTEL
 
 #ifndef SPECTRALCAMERA_H
 #define SPECTRALCAMERA_H
@@ -168,6 +168,12 @@ namespace Spectral
 
         // check if all the frames were acquired
         bool allFramesAcquired() const;
+
+        // get Cooler value
+        bool getCoolerValue() const;
+
+        //set Cooler value
+        void setCoolerValue(bool in_cooler_value);
 
     //-----------------------------------------------------------------------------
 	private:
