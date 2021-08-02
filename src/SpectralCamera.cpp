@@ -369,23 +369,34 @@ bool Camera::allFramesAcquired() const
 
 
 /****************************************************************************************************
- * \fn bool getCoolerValue() const
- * \brief  get current Cooler value (On, Off) 
+ * \fn bool getCoolingValue() const
+ * \brief  get current Cooling value (On, Off) 
  * \param  none
- * \return true is Cooler = On else false
+ * \return true is Cooling = On else false
  ****************************************************************************************************/
-bool Camera::getCoolerValue() const
+bool Camera::getCoolingValue()
 {
-    
+    uint8_t tmp;
+    getCooling(tmp);
+    m_cooling_value = static_cast<bool>(tmp);
+    return m_cooling_value;
 }
 
 /****************************************************************************************************
- * \fn void setCoolerValue() const
- * \brief  set current Cooler value (On, Off) 
- * \param  in_cooler_value new Cooler value
- * \return true is Cooler = On else false
+ * \fn void setCoolingValue() const
+ * \brief  set current Cooling value (On, Off) 
+ * \param  in_cooling_value new Cooling value
+ * \return true is Cooling = On else false
  ****************************************************************************************************/
-void Camera::setCoolerValue(bool in_cooler_value)
+void Camera::setCoolingValue(bool in_cooling_value)
 {
-    
+    m_cooling_value = in_cooling_value;
+    setCooling(static_cast<uint8_t>(m_cooling_value) );
+}
+
+
+std::string& Camera::getCCDTemperature()
+{
+    getCCDTemperatureFromCamera(m_ccd_temperature_value);
+    return m_ccd_temperature_value;
 }

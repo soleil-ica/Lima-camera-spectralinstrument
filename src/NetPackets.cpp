@@ -22,7 +22,7 @@
 /****************************************************************************************************
  * \file   NetPacket.cpp
  * \brief  implementation file of network packets classes.
- * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
+ * \author Cï¿½dric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on October 20, 2020
  ****************************************************************************************************/
 
@@ -156,6 +156,7 @@ double ntohd(double in_value)
 #include "NetCommandRetrieveImage.hpp"
 #include "NetCommandInquireAcquisitionStatus.hpp"
 #include "NetCommandConfigurePackets.hpp"
+#include "NetCommandSetCoolingValue.hpp"
 
 // acknowledge
 #include "NetAcknowledge.hpp"
@@ -167,6 +168,7 @@ double ntohd(double in_value)
 // answers of get commands
 #include "NetGenericAnswer.hpp"
 #include "NetAnswerGenericString.hpp"
+#include "NetAnswerSetCoolingValue.hpp"
 
 #include "NetAnswerGetStatus.hpp"
 #include "NetAnswerGetCameraParameters.hpp"

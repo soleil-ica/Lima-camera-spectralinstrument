@@ -173,3 +173,33 @@ void Camera::getNbHwAcquiredFrames(int & nb_acq_frames) const
     DEB_MEMBER_FUNCT();    
     nb_acq_frames = static_cast<int>(getNbFramesAcquired());
 }
+
+
+//-----------------------------------------------------------------------------
+/// Set the new Cooling value
+//-----------------------------------------------------------------------------
+void Camera::setCooling(uint8_t cooling_value) ///< [in] cooling value to set
+{
+    DEB_MEMBER_FUNCT();
+    DEB_PARAM() << DEB_VAR1(cooling_value);
+    CameraControl::getInstance()->setCoolingValue(cooling_value);
+}
+
+//-----------------------------------------------------------------------------
+/// Get the current cooling value
+//-----------------------------------------------------------------------------
+void Camera::getCooling(uint8_t& cooling_value) const ///< [out] current cooling value
+{
+    DEB_MEMBER_FUNCT();
+    cooling_value = CameraControl::getConstInstance()->getCoolingValue();
+    DEB_RETURN() << DEB_VAR1(cooling_value);
+}
+
+
+
+void Camera::getCCDTemperatureFromCamera(std::string& in_out_value)
+{
+    DEB_MEMBER_FUNCT();
+    in_out_value = CameraControl::getConstInstance()->getCCDTemperatureFromCamera();
+    DEB_RETURN() << DEB_VAR1(in_out_value);
+}

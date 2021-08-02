@@ -151,3 +151,31 @@ void SyncCtrlObj::getValidRanges(ValidRangesType& valid_ranges)
     valid_ranges.min_lat_time = static_cast<double>(min_time) / 1000.0;
     valid_ranges.max_lat_time = static_cast<double>(max_time) / 1000.0;
 }
+
+
+//-----------------------------------------------------
+// @brief
+//-----------------------------------------------------
+void SyncCtrlObj::setCooling(bool cooling)
+{
+    m_cam.setCooling(static_cast<uint8_t>(cooling));
+}
+
+//-----------------------------------------------------
+// @brief
+//-----------------------------------------------------
+void SyncCtrlObj::getCooling(bool& cooling)
+{
+    DEB_MEMBER_FUNCT();    
+
+    uint8_t temp;
+    m_cam.getCooling(temp);
+    cooling = static_cast<bool>(temp);
+}
+
+void SyncCtrlObj::getCCDTemperatureFromCamera(std::string& in_out_value)
+{
+    m_cam.getCCDTemperatureFromCamera(in_out_value);
+}
+
+

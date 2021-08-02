@@ -118,6 +118,9 @@ namespace Spectral
         void setExpTime(uint32_t   exp_time_ms);
         void getExpTime(uint32_t & exp_time_ms) const;
 
+        void setCooling(uint8_t in_cooling);
+        void getCooling(uint8_t& out_cooling) const;
+
         void setLatTime(uint32_t   lat_time_ms);
         void getLatTime(uint32_t & lat_time_ms) const;
 
@@ -169,11 +172,16 @@ namespace Spectral
         // check if all the frames were acquired
         bool allFramesAcquired() const;
 
-        // get Cooler value
-        bool getCoolerValue() const;
+        // get Cooling value
+        bool getCoolingValue();
 
-        //set Cooler value
-        void setCoolerValue(bool in_cooler_value);
+        //set Cooling value
+        void setCoolingValue(bool in_cooling_value);
+
+        // get CCD Temperature value
+        std::string& getCCDTemperature();
+
+        void getCCDTemperatureFromCamera(std::string& in_out_value);
 
     //-----------------------------------------------------------------------------
 	private:
@@ -232,6 +240,12 @@ namespace Spectral
 
         // condition variable used to protect the update authorize flag
         mutable lima::Cond m_update_authorize_cond;
+
+        // cooler value
+        bool m_cooling_value;
+
+        // CCD Temperature value
+        std::string m_ccd_temperature_value;
 
 		//-----------------------------------------------------------------------------
         // Constants

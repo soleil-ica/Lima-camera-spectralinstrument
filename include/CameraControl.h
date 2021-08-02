@@ -22,7 +22,7 @@
 /****************************************************************************************************
  * \file   CameraControl.h
  * \brief  header file of detector communication class.
- * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
+ * \author Cï¿½dric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on October 19, 2020
  ****************************************************************************************************/
 
@@ -254,6 +254,14 @@ class CameraControl : public CameraSingleton<CameraControl>
         // Change the packets settings by sending a command to the hardware
         bool configurePackets(uint16_t in_pixels_per_packet, uint16_t in_packet_delay_usec);
 
+        // change the exposure time by sending a command to the hardware
+        bool setCoolingValue(uint8_t in_cooling_value);
+
+        // get Cooling value
+        uint8_t getCoolingValue() const;
+
+        std::string getCCDTemperatureFromCamera() const;
+
        /***************************************************************************************************
         * SINGLETON MANAGEMENT
         ***************************************************************************************************/
@@ -421,6 +429,12 @@ class CameraControl : public CameraSingleton<CameraControl>
 
         // condition variable used to protect the sendCommand
         mutable lima::Cond m_send_command_cond;
+
+        // Cooling value
+        bool m_cooling_value;
+
+        // CCD Temperature
+        std::string m_ccd_temperature;
 };
 
 } // namespace Spectral

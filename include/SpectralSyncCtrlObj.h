@@ -59,6 +59,11 @@ namespace lima
 
 	    virtual void getValidRanges(ValidRangesType& valid_ranges);
 
+		virtual void setCooling(bool  cooling);
+	    virtual void getCooling(bool& cooling);
+
+		virtual void getCCDTemperatureFromCamera(std::string& in_out_value);
+
 	private:
 	    Camera& m_cam;
 	};

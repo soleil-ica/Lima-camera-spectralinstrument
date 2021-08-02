@@ -26,6 +26,8 @@
 const std::string NetAnswerGetStatus::g_server_flags_status_name    = "Server Flags";
 const std::string NetAnswerGetStatus::g_server_flags_delimiter      = ",";
 const std::size_t NetAnswerGetStatus::g_server_flags_value_position = 1; // starts at 0
+const std::string NetAnswerGetStatus::g_server_flags_hks_name = "HKS flags";
+const std::string NetAnswerGetStatus::g_server_flags_ccd_temperature_name = "CCD 0 CCD Temp.";
 
 /****************************************************************************************************
  * \fn NetAnswerGetStatus()
