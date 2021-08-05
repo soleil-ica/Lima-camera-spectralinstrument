@@ -1,15 +1,15 @@
 //===================================================================================================
-// Class NetAnswerSetReadoutSpeedValue
+// Class NetAnswerSetSingleParameter
 //===================================================================================================
 /****************************************************************************************************
- * \fn NetAnswerSetReadoutSpeedValue()
+ * \fn NetAnswerSetSingleParameter()
  * \brief  constructor
  * \param  none
  * \return none
  ****************************************************************************************************/
-NetAnswerSetReadoutSpeedValue::NetAnswerSetReadoutSpeedValue()
+NetAnswerSetSingleParameter::NetAnswerSetSingleParameter()
 {
-    m_packet_name = "Answer SetReadoutSpeedValue";
+    m_packet_name = "Answer SetSingleParameter";
 }
 
 /****************************************************************************************************
@@ -18,9 +18,9 @@ NetAnswerSetReadoutSpeedValue::NetAnswerSetReadoutSpeedValue()
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetAnswerSetReadoutSpeedValue::log() const
+void NetAnswerSetSingleParameter::log() const
 {
-    std::cout << "-- NetAnswerSetReadoutSpeedValue content --" << std::endl;
+    std::cout << "-- NetAnswerSetSingleParameter content --" << std::endl;
 }
 
 /****************************************************************************************************
@@ -29,8 +29,8 @@ void NetAnswerSetReadoutSpeedValue::log() const
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetAnswerSetReadoutSpeedValue::totalLog() const
+void NetAnswerSetSingleParameter::totalLog() const
 {
     NetAnswerCommandDone::totalLog();
-    NetAnswerSetReadoutSpeedValue::log();
+    NetAnswerSetSingleParameter::log();
 }

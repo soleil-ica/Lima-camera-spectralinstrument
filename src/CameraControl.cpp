@@ -1148,7 +1148,7 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
             if(command_done.m_function_number == NetCommandHeader::g_function_number_set_single_parameter)
             {
                 // it's ok, we can "return" the packet
-                out_packet = new NetAnswerSetReadoutSpeedValue();
+                out_packet = new NetAnswerSetSingleParameter();
             }
             else
             {
@@ -2603,12 +2603,13 @@ bool CameraControl::setReadoutSpeedValue(uint32_t readout_speed_value)
     int32_t                error           = 0    ;
     bool                   result          = false;
     NetGenericHeader     * second_packet   = NULL ;
-    NetCommandHeader     * command         = new NetCommandSetReadoutSpeedValue();
+    const std::string& readout_speed_name  = "DSI Sample Time\0";
+    NetCommandHeader     * command         = new NetCommandSetSingleParameter(readout_speed_value, readout_speed_name);
     
-    NetAnswerSetReadoutSpeedValue  * answer_packet         = NULL ;
-    NetCommandSetReadoutSpeedValue * command_readout_speed_value = dynamic_cast<NetCommandSetReadoutSpeedValue *>(command);
+    NetAnswerSetSingleParameter  * answer_packet         = NULL ;
+    NetCommandSetSingleParameter * command_readout_speed_value = dynamic_cast<NetCommandSetSingleParameter *>(command);
 
-    command_readout_speed_value->m_readout_speed_value = static_cast<ushort>(readout_speed_value); 
+    command_readout_speed_value->m_data_value = static_cast<ushort>(readout_speed_value); 
 
     // send the command and treat the acknowledge
     if(!sendCommandWithAck(command, error))
@@ -2619,7 +2620,7 @@ bool CameraControl::setReadoutSpeedValue(uint32_t readout_speed_value)
         goto done;
 
     // we need to manage the data 
-    answer_packet = dynamic_cast<NetAnswerSetReadoutSpeedValue *>(second_packet);
+    answer_packet = dynamic_cast<NetAnswerSetSingleParameter *>(second_packet);
 
     if(!answer_packet->hasError())
     {

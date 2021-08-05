@@ -1482,13 +1482,13 @@ public:
 };
 
 
-class NetCommandSetReadoutSpeedValue : public NetCommandHeader
+class NetCommandSetSingleParameter : public NetCommandHeader
 {
     friend class CameraControl;    
 
 public:
     // constructor
-    NetCommandSetReadoutSpeedValue();
+    NetCommandSetSingleParameter(uint32_t& data_value, const std::string& data_name);
 
     //-----------------------
     // not recursive methods
@@ -1521,17 +1521,17 @@ public:
     virtual void totalLog() const;
 
 protected:
-    uint32_t m_readout_speed_value;
-    std::string m_readout_speed_name;
+    uint32_t m_data_value;
+    std::string m_data_name;
 };
 
-class NetAnswerSetReadoutSpeedValue : public NetAnswerCommandDone
+class NetAnswerSetSingleParameter : public NetAnswerCommandDone
 {
     friend class CameraControl;    
 
 public:
     // constructor
-    NetAnswerSetReadoutSpeedValue();
+    NetAnswerSetSingleParameter();
 
     //-----------------------
     // not recursive methods

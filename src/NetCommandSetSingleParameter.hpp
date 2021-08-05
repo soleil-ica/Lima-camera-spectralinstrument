@@ -1,19 +1,21 @@
 //===================================================================================================
-// Class NetCommandSetReadoutSpeedValue
+// Class NetCommandSetSingleParameter
 //===================================================================================================
 /****************************************************************************************************
- * \fn NetCommandSetReadoutSpeedValue()
+ * \fn NetCommandSetSingleParameter()
  * \brief  constructor
  * \param  none
  * \return none
  ****************************************************************************************************/
-NetCommandSetReadoutSpeedValue::NetCommandSetReadoutSpeedValue()
+NetCommandSetSingleParameter::NetCommandSetSingleParameter(uint32_t& data_value, const std::string& data_name)
+: m_data_value(data_value),
+  m_data_name(data_name)
 {
     m_function_number   = NetCommandHeader::g_function_number_set_single_parameter; // function to be executed (1000 .. 1999)
-    m_packet_name       = "Command SetReadoutSpeedValue";
+    m_packet_name       = "Command SetSingleparameter";
     m_is_server_command = false; // some commands are server related, others to a camera
-    m_readout_speed_value = 0  ;
-    m_readout_speed_name = "DSI Sample Time\0";
+    //m_readout_speed_value = 0  ;
+    //m_readout_speed_name = "DSI Sample Time\0";
 }
 
 /****************************************************************************************************
@@ -22,9 +24,9 @@ NetCommandSetReadoutSpeedValue::NetCommandSetReadoutSpeedValue()
  * \param  none
  * \return specific packet size
  ****************************************************************************************************/
-std::size_t NetCommandSetReadoutSpeedValue::size() const
+std::size_t NetCommandSetSingleParameter::size() const
 {
-    return  sizeof(m_readout_speed_value) + m_readout_speed_name.size();
+    return  sizeof(m_data_value) + m_data_name.size();
 }
 
 /****************************************************************************************************
@@ -33,9 +35,9 @@ std::size_t NetCommandSetReadoutSpeedValue::size() const
  * \param  none
  * \return total packet size
  ****************************************************************************************************/
-std::size_t NetCommandSetReadoutSpeedValue::totalSize() const
+std::size_t NetCommandSetSingleParameter::totalSize() const
 {   
-    return NetCommandHeader::totalSize() + NetCommandSetReadoutSpeedValue::size();
+    return NetCommandHeader::totalSize() + NetCommandSetSingleParameter::size();
 }
 
 /****************************************************************************************************
@@ -45,14 +47,14 @@ std::size_t NetCommandSetReadoutSpeedValue::totalSize() const
  * \param  in_out_memory_size size of the rest of memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetCommandSetReadoutSpeedValue::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
+bool NetCommandSetSingleParameter::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
 {
-    if(in_out_memory_size != NetCommandSetReadoutSpeedValue::size())
+    if(in_out_memory_size != NetCommandSetSingleParameter::size())
         return false;
 
-    readData(in_out_memory_data, m_readout_speed_value);
+    readData(in_out_memory_data, m_data_value);
 
-    in_out_memory_size -= NetCommandSetReadoutSpeedValue::size();
+    in_out_memory_size -= NetCommandSetSingleParameter::size();
 
     return true;
 }
@@ -64,15 +66,15 @@ bool NetCommandSetReadoutSpeedValue::read(const uint8_t * & in_out_memory_data, 
  * \param  in_out_memory_size size of the rest of the memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetCommandSetReadoutSpeedValue::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
+bool NetCommandSetSingleParameter::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
 {
-    if(in_out_memory_size < NetCommandSetReadoutSpeedValue::size())
+    if(in_out_memory_size < NetCommandSetSingleParameter::size())
         return false;
 
-    writeData(in_out_memory_data, m_readout_speed_value);
-    memcpy(reinterpret_cast<char *>(in_out_memory_data), m_readout_speed_name.c_str(), m_readout_speed_name.size());  
+    writeData(in_out_memory_data, m_data_value);
+    memcpy(reinterpret_cast<char *>(in_out_memory_data), m_data_name.c_str(), m_data_name.size());  
 
-    in_out_memory_size -= NetCommandSetReadoutSpeedValue::size();
+    in_out_memory_size -= NetCommandSetSingleParameter::size();
 
     return true;
 }
@@ -84,12 +86,12 @@ bool NetCommandSetReadoutSpeedValue::write(uint8_t * & in_out_memory_data, std::
  * \param  in_out_memory_size size of the rest of memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetCommandSetReadoutSpeedValue::totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
+bool NetCommandSetSingleParameter::totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
 {
     if(!NetCommandHeader::totalRead(in_out_memory_data, in_out_memory_size))
         return false;
 
-    return NetCommandSetReadoutSpeedValue::read(in_out_memory_data, in_out_memory_size);
+    return NetCommandSetSingleParameter::read(in_out_memory_data, in_out_memory_size);
 }
 
 /****************************************************************************************************
@@ -99,12 +101,12 @@ bool NetCommandSetReadoutSpeedValue::totalRead(const uint8_t * & in_out_memory_d
  * \param  in_out_memory_size size of the rest of the memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetCommandSetReadoutSpeedValue::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
+bool NetCommandSetSingleParameter::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
 {
     if(!NetCommandHeader::totalWrite(in_out_memory_data, in_out_memory_size))
         return false;
 
-    return NetCommandSetReadoutSpeedValue::write(in_out_memory_data, in_out_memory_size);
+    return NetCommandSetSingleParameter::write(in_out_memory_data, in_out_memory_size);
 }
 
 /****************************************************************************************************
@@ -113,10 +115,10 @@ bool NetCommandSetReadoutSpeedValue::totalWrite(uint8_t * & in_out_memory_data, 
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetCommandSetReadoutSpeedValue::log() const
+void NetCommandSetSingleParameter::log() const
 {
-    std::cout << "-- NetCommandSetReadoutSpeedValue content --" << std::endl;
-    std::cout << "m_readout_speed_value : " << m_readout_speed_value << std::endl;
+    std::cout << "-- NetCommandSetSingleParameter content --" << std::endl;
+    std::cout << "m_data_value : " << m_data_value << std::endl;
 }
 
 /****************************************************************************************************
@@ -125,10 +127,10 @@ void NetCommandSetReadoutSpeedValue::log() const
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetCommandSetReadoutSpeedValue::totalLog() const
+void NetCommandSetSingleParameter::totalLog() const
 {
     NetCommandHeader::totalLog();
-    NetCommandSetReadoutSpeedValue::log();
+    NetCommandSetSingleParameter::log();
 }
 
 //###########################################################################
