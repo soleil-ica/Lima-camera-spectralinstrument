@@ -187,6 +187,15 @@ template <> void NetGenericHeader::readData<double>(const uint8_t * & in_out_mem
 // fill the memory data with the class data value. Also, jump to the next value.
 template <> void NetGenericHeader::writeData<double>(uint8_t * & in_out_memory_data, double in_class_data) const;
 
+//------------------------------------------------------------
+// specialized template methods for string
+//------------------------------------------------------------
+// fill the memory data with the class data value. Also, jump to the next value.
+template <> void NetGenericHeader::writeData<std::string>(uint8_t * & in_out_memory_data, std::string in_class_data) const;
+
+// fill the class data with the read value of the memory data. Also, jump to the next value.
+template <> void NetGenericHeader::readData<std::string>(const uint8_t * & in_out_memory_data, std::string& out_class_data);
+
 /*
  *  \class NetCommandHeader
  *  \brief This class is a header command packet class

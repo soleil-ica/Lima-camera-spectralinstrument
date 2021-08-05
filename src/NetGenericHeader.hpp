@@ -117,6 +117,33 @@ template <> void NetGenericHeader::writeData<uint16_t>(uint8_t * & in_out_memory
 }
 
 //------------------------------------------------------------
+// specialized template methods for string
+//------------------------------------------------------------
+/****************************************************************************************************
+ * \fn template <> void NetGenericHeader::writeData<std::string>(uint8_t * & in_out_memory_data, std::string in_class_data) const
+ * \brief  fill the memory data with the class data value. Also, jump to the next value.
+ * \param  in_out_memory_data memory data to be filled. This pointer will jump to the next value.
+ * \param  in_class_data class data to be read
+ * \return none
+ ****************************************************************************************************/
+template <> void NetGenericHeader::writeData<std::string>(uint8_t * & in_out_memory_data, std::string in_class_data) const
+{
+    memcpy(reinterpret_cast<char *>(in_out_memory_data), in_class_data.data(), in_class_data.size());
+}
+
+/****************************************************************************************************
+ * \fn template <> void NetGenericHeader::readData<std::string>(const uint8_t * & in_out_memory_data, std::string out_class_data)
+ * \brief  fill the memory data with the class data value. Also, jump to the next value.
+ * \param  in_out_memory_data memory data to be filled. This pointer will jump to the next value.
+ * \param  in_class_data class data to be read
+ * \return none
+ ****************************************************************************************************/
+template <> void NetGenericHeader::readData<std::string>(const uint8_t * & in_out_memory_data, std::string& out_class_data)
+{
+    memcpy((char*)out_class_data.data(), reinterpret_cast<const char *>(in_out_memory_data), out_class_data.size());
+}
+
+//------------------------------------------------------------
 // specialized template methods for 32 bits signed integers
 //------------------------------------------------------------
 /****************************************************************************************************

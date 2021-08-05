@@ -66,7 +66,7 @@ std::size_t NetAnswerGenericString::totalSize() const
 bool NetAnswerGenericString::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
 {
     m_value.resize(in_out_memory_size);
-    memcpy((char*)m_value.data(), reinterpret_cast<const char *>(in_out_memory_data), in_out_memory_size);
+    readData(in_out_memory_data, m_value);
 
     in_out_memory_data += NetAnswerGenericString::size();
 
@@ -94,7 +94,7 @@ bool NetAnswerGenericString::write(uint8_t * & in_out_memory_data, std::size_t &
     if(in_out_memory_size != NetAnswerGenericString::size())
         return false;
 
-    memcpy(reinterpret_cast<char *>(in_out_memory_data), m_value.data(), in_out_memory_size);  
+    writeData(in_out_memory_data, m_value);  
 
     in_out_memory_size -= NetAnswerGenericString::size();
 

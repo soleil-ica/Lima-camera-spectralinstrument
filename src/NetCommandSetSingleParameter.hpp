@@ -14,8 +14,6 @@ NetCommandSetSingleParameter::NetCommandSetSingleParameter(uint32_t& data_value,
     m_function_number   = NetCommandHeader::g_function_number_set_single_parameter; // function to be executed (1000 .. 1999)
     m_packet_name       = "Command SetSingleparameter";
     m_is_server_command = false; // some commands are server related, others to a camera
-    //m_readout_speed_value = 0  ;
-    //m_readout_speed_name = "DSI Sample Time\0";
 }
 
 /****************************************************************************************************
@@ -72,7 +70,7 @@ bool NetCommandSetSingleParameter::write(uint8_t * & in_out_memory_data, std::si
         return false;
 
     writeData(in_out_memory_data, m_data_value);
-    memcpy(reinterpret_cast<char *>(in_out_memory_data), m_data_name.c_str(), m_data_name.size());  
+    writeData(in_out_memory_data, m_data_name);
 
     in_out_memory_size -= NetCommandSetSingleParameter::size();
 
@@ -119,6 +117,7 @@ void NetCommandSetSingleParameter::log() const
 {
     std::cout << "-- NetCommandSetSingleParameter content --" << std::endl;
     std::cout << "m_data_value : " << m_data_value << std::endl;
+    std::cout << "m_data_name : " << m_data_name << std::endl;
 }
 
 /****************************************************************************************************
