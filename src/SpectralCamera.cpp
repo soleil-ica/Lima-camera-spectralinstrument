@@ -395,8 +395,38 @@ void Camera::setCoolingValue(bool in_cooling_value)
 }
 
 
-std::string& Camera::getCCDTemperature()
+/****************************************************************************************************
+ * \fn float& getCCDTemperature()
+ * \brief  get current camera temperature
+ * \param  none
+ * \return camera temperature
+ ****************************************************************************************************/
+float& Camera::getCCDTemperature()
 {
     getCCDTemperatureFromCamera(m_ccd_temperature_value);
     return m_ccd_temperature_value;
+}
+
+/****************************************************************************************************
+ * \fn ushort& getReadoutSpeed()
+ * \brief  get current DSI Sample Time/Readout Speed value
+ * \param  none
+ * \return DSI Sample Time/Readout Speed value
+ ****************************************************************************************************/
+ushort& Camera::getReadoutSpeed()
+{
+    getReadoutSpeedFromCamera(m_readout_speed_value_sc);
+    return m_readout_speed_value_sc;
+}
+
+/****************************************************************************************************
+ * \fn void setReadoutSpeedValue(ushort readout_speed_value)
+ * \brief  set current DSI Sample Time/Readout Speed value
+ * \param  readout_speed_value new readout speed
+ * \return none
+ ****************************************************************************************************/
+void Camera::setReadoutSpeedValue(ushort readout_speed_value)
+{
+    m_readout_speed_value_sc = readout_speed_value;
+    setReadoutSpeed(static_cast<uint32_t>(m_readout_speed_value_sc));
 }

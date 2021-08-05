@@ -25,12 +25,17 @@
 //===================================================================================================
 const std::string NetAnswerGetCameraParameters::g_server_flags_group_factory_name       = "Factory"      ;
 const std::string NetAnswerGetCameraParameters::g_server_flags_group_miscellaneous_name = "Miscellaneous";
+const std::string NetAnswerGetCameraParameters::g_server_flags_group_control_name = "Control";
 
 const std::string NetAnswerGetCameraParameters::g_server_flags_instrument_model_name          = "Instrument Model";
 const std::string NetAnswerGetCameraParameters::g_server_flags_instrument_serial_number_name  = "Instrument SN"   ;
 const std::string NetAnswerGetCameraParameters::g_server_flags_instrument_serial_size_name    = "Serial Size"     ;
 const std::string NetAnswerGetCameraParameters::g_server_flags_instrument_parallel_size_name  = "Parallel Size"   ;
 const std::string NetAnswerGetCameraParameters::g_server_flags_instrument_bits_per_pixel_name = "Bits Per Pixel"  ;
+
+const std::string NetAnswerGetCameraParameters::g_server_flags_control_dsi_sample_time_name = "DSI Sample Time";
+const std::string NetAnswerGetCameraParameters::g_camera_enum_readout_1MHz_value = "1MHz";
+const std::string NetAnswerGetCameraParameters::g_camera_enum_readout_690KHz_value = "690KHz";
 
 const std::string NetAnswerGetCameraParameters::g_server_flags_delimiter      = ",";
 const std::size_t NetAnswerGetCameraParameters::g_server_flags_value_position = 2  ; // starts at 0

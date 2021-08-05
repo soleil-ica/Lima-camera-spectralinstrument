@@ -254,13 +254,18 @@ class CameraControl : public CameraSingleton<CameraControl>
         // Change the packets settings by sending a command to the hardware
         bool configurePackets(uint16_t in_pixels_per_packet, uint16_t in_packet_delay_usec);
 
-        // change the exposure time by sending a command to the hardware
+        // change the cooling by sending a command to the hardware
         bool setCoolingValue(uint8_t in_cooling_value);
 
         // get Cooling value
         uint8_t getCoolingValue() const;
 
-        std::string getCCDTemperatureFromCamera() const;
+        // change readout speed by sending a command to the hardware
+        bool setReadoutSpeedValue(uint32_t readout_speed_value);
+
+        float getCCDTemperatureFromCamera() const;
+
+        ushort getReadoutSpeedFromCamera() const;
 
        /***************************************************************************************************
         * SINGLETON MANAGEMENT
@@ -434,7 +439,9 @@ class CameraControl : public CameraSingleton<CameraControl>
         bool m_cooling_value;
 
         // CCD Temperature
-        std::string m_ccd_temperature;
+        float m_ccd_temperature;
+
+        ushort m_readout_speed_value;
 };
 
 } // namespace Spectral

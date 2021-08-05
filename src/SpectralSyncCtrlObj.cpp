@@ -173,9 +173,28 @@ void SyncCtrlObj::getCooling(bool& cooling)
     cooling = static_cast<bool>(temp);
 }
 
-void SyncCtrlObj::getCCDTemperatureFromCamera(std::string& in_out_value)
+//-----------------------------------------------------
+// @brief
+//-----------------------------------------------------
+void SyncCtrlObj::getCCDTemperatureFromCamera(float& in_out_value)
 {
     m_cam.getCCDTemperatureFromCamera(in_out_value);
+}
+
+//-----------------------------------------------------
+// @brief
+//-----------------------------------------------------
+void SyncCtrlObj::getReadoutSpeedFromCamera(ushort& in_out_value)
+{
+    m_cam.getReadoutSpeedFromCamera(in_out_value);
+}
+
+//-----------------------------------------------------
+// @brief
+//-----------------------------------------------------
+void SyncCtrlObj::setReadoutSpeed(ushort readout_speed)
+{
+    m_cam.setReadoutSpeed(readout_speed);
 }
 
 

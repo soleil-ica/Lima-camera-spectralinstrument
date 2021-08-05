@@ -196,10 +196,32 @@ void Camera::getCooling(uint8_t& cooling_value) const ///< [out] current cooling
 }
 
 
-
-void Camera::getCCDTemperatureFromCamera(std::string& in_out_value)
+//-----------------------------------------------------------------------------
+/// Get the current camera temperature
+//-----------------------------------------------------------------------------
+void Camera::getCCDTemperatureFromCamera(float& in_out_value)
 {
     DEB_MEMBER_FUNCT();
     in_out_value = CameraControl::getConstInstance()->getCCDTemperatureFromCamera();
     DEB_RETURN() << DEB_VAR1(in_out_value);
+}
+
+//-----------------------------------------------------------------------------
+/// Get the current readout speed value
+//-----------------------------------------------------------------------------
+void Camera::getReadoutSpeedFromCamera(ushort& in_out_value)
+{
+    DEB_MEMBER_FUNCT();
+    in_out_value = CameraControl::getConstInstance()->getReadoutSpeedFromCamera();
+    DEB_RETURN() << DEB_VAR1(in_out_value);
+}
+
+//-----------------------------------------------------------------------------
+/// Set the new readout speed value
+//-----------------------------------------------------------------------------
+void Camera::setReadoutSpeed(ushort readout_speed_value)
+{
+   DEB_MEMBER_FUNCT();
+   DEB_PARAM() << DEB_VAR1(readout_speed_value);
+   CameraControl::getInstance()->setReadoutSpeedValue((uint32_t)readout_speed_value);
 }

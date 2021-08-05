@@ -23,7 +23,7 @@
  * \file   NetPacketsGroups.cpp
  * \brief  implementation file of network packets container class
  *         It is used during the data reception to sort the different data types.
- * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
+ * \author Cï¿½dric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on October 23, 2020
  ****************************************************************************************************/
 
@@ -63,6 +63,7 @@ NetPacketsGroups::NetPacketsGroups()
     createGroup("get parameters list"    , NetGenericAnswer::g_data_type_get_camera_parameters);
     createGroup("get settings list"      , NetGenericAnswer::g_data_type_get_settings         );
     createGroup("acquisition status list", NetGenericAnswer::g_data_type_acquisition_status   );
+    
 
     // command done groups
     createGroup("set acquisition mode list"    , NetCommandHeader::g_function_number_set_acquisition_mode    );
@@ -73,6 +74,8 @@ NetPacketsGroups::NetPacketsGroups()
     createGroup("terminate acquisition list"   , NetCommandHeader::g_function_number_terminate_acquisition   );
     createGroup("terminate image retrieve list", NetCommandHeader::g_function_number_terminate_image_retrieve);
     createGroup("configure packets list"       , NetCommandHeader::g_function_number_configure_packets       );
+    createGroup("set ON/OFF cooling value"     , NetCommandHeader::g_function_number_set_cooling_value );
+    createGroup("set single parameter"         , NetCommandHeader::g_function_number_set_single_parameter);
 }
 
 /****************************************************************************************************

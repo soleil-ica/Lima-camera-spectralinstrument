@@ -259,7 +259,8 @@ protected:
     static const uint16_t g_function_number_terminate_image_retrieve  ; // to set Function number
     static const uint16_t g_function_number_inquire_acquisition_status; // to set Function number
     static const uint16_t g_function_number_configure_packets         ; // to set Function number
-    static const uint16_t g_function_number_set_cooling_value          ; // to set Function number
+    static const uint16_t g_function_number_set_cooling_value         ; // to set Function number
+    static const uint16_t g_function_number_set_single_parameter      ; // to set Function number
 };
 
 /*
@@ -914,6 +915,8 @@ protected:
     // miscellaneous group name for keys to read
     static const std::string g_server_flags_group_miscellaneous_name;
 
+    static const std::string g_server_flags_group_control_name;
+
     // keys names
     static const std::string g_server_flags_instrument_model_name         ;
     static const std::string g_server_flags_instrument_serial_number_name ;
@@ -926,6 +929,10 @@ protected:
 
     // position of a value in a key (group,name,value)
     static const std::size_t g_server_flags_value_position;
+
+    static const std::string g_server_flags_control_dsi_sample_time_name;
+    static const std::string g_camera_enum_readout_1MHz_value;
+    static const std::string g_camera_enum_readout_690KHz_value;
 };
 
 /*
@@ -1460,6 +1467,71 @@ class NetAnswerSetCoolingValue : public NetAnswerCommandDone
 public:
     // constructor
     NetAnswerSetCoolingValue();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+};
+
+
+class NetCommandSetReadoutSpeedValue : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetCommandSetReadoutSpeedValue();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // get the specific packet size
+    virtual std::size_t size() const;
+
+    // read the values stored into a memory block and fill them into the class members
+    virtual bool read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // write the class members values into a memory block
+    virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // get the total packet size
+    virtual std::size_t totalSize() const;
+
+    // totally read the values stored into a memory block and fill them into the class members
+    virtual bool totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // totally write the class members values into a memory block
+    virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    uint32_t m_readout_speed_value;
+    std::string m_readout_speed_name;
+};
+
+class NetAnswerSetReadoutSpeedValue : public NetAnswerCommandDone
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetAnswerSetReadoutSpeedValue();
 
     //-----------------------
     // not recursive methods

@@ -179,9 +179,17 @@ namespace Spectral
         void setCoolingValue(bool in_cooling_value);
 
         // get CCD Temperature value
-        std::string& getCCDTemperature();
+        float& getCCDTemperature();
 
-        void getCCDTemperatureFromCamera(std::string& in_out_value);
+        void getCCDTemperatureFromCamera(float& in_out_value);
+
+        ushort& getReadoutSpeed();
+
+        void setReadoutSpeed(ushort readout_speed_value);
+
+        void setReadoutSpeedValue(ushort readout_speed_value);
+
+        void getReadoutSpeedFromCamera(ushort& in_out_value);
 
     //-----------------------------------------------------------------------------
 	private:
@@ -245,7 +253,10 @@ namespace Spectral
         bool m_cooling_value;
 
         // CCD Temperature value
-        std::string m_ccd_temperature_value;
+        float m_ccd_temperature_value;
+
+        // Readout speed
+        ushort m_readout_speed_value_sc;
 
 		//-----------------------------------------------------------------------------
         // Constants

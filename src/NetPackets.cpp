@@ -157,6 +157,7 @@ double ntohd(double in_value)
 #include "NetCommandInquireAcquisitionStatus.hpp"
 #include "NetCommandConfigurePackets.hpp"
 #include "NetCommandSetCoolingValue.hpp"
+#include "NetCommandSetReadoutSpeedValue.hpp"
 
 // acknowledge
 #include "NetAcknowledge.hpp"
@@ -169,6 +170,7 @@ double ntohd(double in_value)
 #include "NetGenericAnswer.hpp"
 #include "NetAnswerGenericString.hpp"
 #include "NetAnswerSetCoolingValue.hpp"
+#include "NetAnswerSetReadoutSpeedValue.hpp"
 
 #include "NetAnswerGetStatus.hpp"
 #include "NetAnswerGetCameraParameters.hpp"

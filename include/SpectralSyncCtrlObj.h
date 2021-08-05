@@ -62,7 +62,10 @@ namespace lima
 		virtual void setCooling(bool  cooling);
 	    virtual void getCooling(bool& cooling);
 
-		virtual void getCCDTemperatureFromCamera(std::string& in_out_value);
+		virtual void getCCDTemperatureFromCamera(float& in_out_value);
+
+		virtual void getReadoutSpeedFromCamera(ushort& in_out_value);
+		virtual void setReadoutSpeed( ushort readout_speed);
 
 	private:
 	    Camera& m_cam;
