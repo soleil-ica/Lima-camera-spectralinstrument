@@ -28,7 +28,7 @@
 #include <algorithm>
 
 // PROJECT
-#include "SpectralCamera.h"
+#include "SpectralInstrumentCamera.h"
 #include "CameraControl.h"
 #include "CameraUpdateDataThread.h"
 #include "CameraAcqThread.h"
@@ -41,11 +41,11 @@ const double Camera::g_pixel_size_x = 75e-6; // pixel size is ? micron
 const double Camera::g_pixel_size_y = 75e-6; // pixel size is ? micron
 
 // we split the camera source code into several functionnalities blocks 
-#include "SpectralCameraInterface.hpp"
-#include "SpectralCameraBin.hpp"
-#include "SpectralCameraRoi.hpp"
-#include "SpectralCameraSync.hpp"
-#include "SpectralCameraDetInfo.hpp"
+#include "SpectralInstrumentCameraInterface.hpp"
+#include "SpectralInstrumentCameraBin.hpp"
+#include "SpectralInstrumentCameraRoi.hpp"
+#include "SpectralInstrumentCameraSync.hpp"
+#include "SpectralInstrumentCameraDetInfo.hpp"
 
 //-----------------------------------------------------------------------------
 // used to give acess to the Camera instance like a singleton.

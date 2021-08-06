@@ -39,7 +39,7 @@
 #include "lima/Debug.h"
 
 // PROJECT
-#include "SpectralCompatibility.h"
+#include "SpectralInstrumentCompatibility.h"
 
 #define REPORT_EVENT(desc) { \
     Event *my_event = new Event(Hardware,Event::Info, Event::Camera, Event::Default,desc); \

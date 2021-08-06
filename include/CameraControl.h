@@ -51,7 +51,7 @@
 #include <netinet/in.h>
 
 // PROJECT
-#include "SpectralCompatibility.h"
+#include "SpectralInstrumentCompatibility.h"
 #include "CameraSingleton.h"
 #include "NetPackets.h"
 #include "ProtectedList.h"

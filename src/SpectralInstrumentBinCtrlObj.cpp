@@ -1,3 +1,4 @@
+
 //###########################################################################
 // This file is part of LImA, a Library for Image Acquisition
 //
@@ -19,56 +20,42 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
-#include "SpectralRoiCtrlObj.h"
+#include "SpectralInstrumentBinCtrlObj.h"
 
 using namespace lima;
 using namespace lima::Spectral;
 using namespace std;
 
-//-----------------------------------------------------
-// @brief Ctor
-//-----------------------------------------------------
-RoiCtrlObj::RoiCtrlObj(Camera& cam)
-    : m_cam(cam)
-{
-    DEB_CONSTRUCTOR();    
-}
 
 //-----------------------------------------------------
-// @brief Dtor
+// @brief
 //-----------------------------------------------------
-RoiCtrlObj::~RoiCtrlObj()
+BinCtrlObj::BinCtrlObj(Camera &cam) : m_cam(cam) 
 {
-    DEB_DESTRUCTOR();
+    DEB_CONSTRUCTOR();
+}
+
+void BinCtrlObj::setBin(const Bin& aBin)
+{
+    DEB_MEMBER_FUNCT();    
+    m_cam.setBin(aBin);
 }
 
 //-----------------------------------------------------
 // @brief
 //-----------------------------------------------------
-void RoiCtrlObj::checkRoi(const Roi& set_roi, Roi& hw_roi)
+void BinCtrlObj::getBin(Bin &aBin)
 {
-    DEB_MEMBER_FUNCT();
-    m_cam.checkRoi(set_roi, hw_roi);
+    DEB_MEMBER_FUNCT();    
+    m_cam.getBin(aBin);
 }
 
 //-----------------------------------------------------
 // @brief
 //-----------------------------------------------------
-void RoiCtrlObj::setRoi(const Roi& roi)
+void BinCtrlObj::checkBin(Bin &aBin)
 {
-    DEB_MEMBER_FUNCT();
-    Roi real_roi;
-    checkRoi(roi,real_roi);
-    m_cam.setRoi(real_roi);
-
-}
-
-//-----------------------------------------------------
-// @brief
-//-----------------------------------------------------
-void RoiCtrlObj::getRoi(Roi& roi)
-{
-    DEB_MEMBER_FUNCT();
-    m_cam.getRoi(roi);
+    DEB_MEMBER_FUNCT();    
+    m_cam.checkBin(aBin);
 }
 

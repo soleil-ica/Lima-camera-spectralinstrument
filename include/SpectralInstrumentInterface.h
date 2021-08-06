@@ -21,14 +21,14 @@
 //###########################################################################
 #ifndef SPECTRALINTERFACE_H
 #define SPECTRALINTERFACE_H
-#include "SpectralCompatibility.h"
+#include "SpectralInstrumentCompatibility.h"
 #include "lima/HwInterface.h"
 #include "lima/HwEventCtrlObj.h"
-#include "SpectralCamera.h"
-#include "SpectralDetInfoCtrlObj.h"
-#include "SpectralSyncCtrlObj.h"
-#include "SpectralBinCtrlObj.h"
-#include "SpectralRoiCtrlObj.h"
+#include "SpectralInstrumentCamera.h"
+#include "SpectralInstrumentDetInfoCtrlObj.h"
+#include "SpectralInstrumentSyncCtrlObj.h"
+#include "SpectralInstrumentBinCtrlObj.h"
+#include "SpectralInstrumentRoiCtrlObj.h"
 
 
 namespace lima

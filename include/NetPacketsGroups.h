@@ -23,7 +23,7 @@
  * \file   NetPacketsGroups.h
  * \brief  header file of network packets container class
  *         It is used during the data reception to sort the different data types.
- * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
+ * \author Cï¿½dric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on October 23, 2020
  ****************************************************************************************************/
 
@@ -38,7 +38,7 @@
 #include <map>
 
 // PROJECT
-#include "SpectralCompatibility.h"
+#include "SpectralInstrumentCompatibility.h"
 #include "ProtectedList.h"
 
 /*

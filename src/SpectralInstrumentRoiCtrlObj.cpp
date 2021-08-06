@@ -1,4 +1,3 @@
-
 //###########################################################################
 // This file is part of LImA, a Library for Image Acquisition
 //
@@ -20,42 +19,56 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
-#include "SpectralBinCtrlObj.h"
+#include "SpectralInstrumentRoiCtrlObj.h"
 
 using namespace lima;
 using namespace lima::Spectral;
 using namespace std;
 
-
 //-----------------------------------------------------
-// @brief
+// @brief Ctor
 //-----------------------------------------------------
-BinCtrlObj::BinCtrlObj(Camera &cam) : m_cam(cam) 
+RoiCtrlObj::RoiCtrlObj(Camera& cam)
+    : m_cam(cam)
 {
-    DEB_CONSTRUCTOR();
-}
-
-void BinCtrlObj::setBin(const Bin& aBin)
-{
-    DEB_MEMBER_FUNCT();    
-    m_cam.setBin(aBin);
+    DEB_CONSTRUCTOR();    
 }
 
 //-----------------------------------------------------
-// @brief
+// @brief Dtor
 //-----------------------------------------------------
-void BinCtrlObj::getBin(Bin &aBin)
+RoiCtrlObj::~RoiCtrlObj()
 {
-    DEB_MEMBER_FUNCT();    
-    m_cam.getBin(aBin);
+    DEB_DESTRUCTOR();
 }
 
 //-----------------------------------------------------
 // @brief
 //-----------------------------------------------------
-void BinCtrlObj::checkBin(Bin &aBin)
+void RoiCtrlObj::checkRoi(const Roi& set_roi, Roi& hw_roi)
 {
-    DEB_MEMBER_FUNCT();    
-    m_cam.checkBin(aBin);
+    DEB_MEMBER_FUNCT();
+    m_cam.checkRoi(set_roi, hw_roi);
+}
+
+//-----------------------------------------------------
+// @brief
+//-----------------------------------------------------
+void RoiCtrlObj::setRoi(const Roi& roi)
+{
+    DEB_MEMBER_FUNCT();
+    Roi real_roi;
+    checkRoi(roi,real_roi);
+    m_cam.setRoi(real_roi);
+
+}
+
+//-----------------------------------------------------
+// @brief
+//-----------------------------------------------------
+void RoiCtrlObj::getRoi(Roi& roi)
+{
+    DEB_MEMBER_FUNCT();
+    m_cam.getRoi(roi);
 }
 

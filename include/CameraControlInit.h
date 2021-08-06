@@ -22,7 +22,7 @@
 /****************************************************************************************************
  * \file   CameraControlInit.h
  * \brief  header file of camera control init parameters structure.
- * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
+ * \author Cï¿½dric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on November 02, 2020
  ****************************************************************************************************/
 
@@ -35,7 +35,7 @@
 #include <stdint.h>
 
 // PROJECT
-#include "SpectralCompatibility.h"
+#include "SpectralInstrumentCompatibility.h"
 
 /*
  *  \namespace lima

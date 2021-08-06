@@ -22,7 +22,7 @@
 /****************************************************************************************************
  * \file   ProtectedList.h
  * \brief  header file of a multithreads protected container (template class).
- * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
+ * \author Cï¿½dric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on October 23, 2020
  ****************************************************************************************************/
 
@@ -42,7 +42,7 @@
 #include <iostream>
 
 // PROJECT
-#include "SpectralCompatibility.h"
+#include "SpectralInstrumentCompatibility.h"
 #include "NetPackets.h"
 
 // LIMA 

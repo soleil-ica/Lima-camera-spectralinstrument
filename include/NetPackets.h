@@ -40,7 +40,7 @@
 #include "lima/SizeUtils.h"
 
 // PROJECT
-#include "SpectralCompatibility.h"
+#include "SpectralInstrumentCompatibility.h"
 
 /*
  *  \namespace lima

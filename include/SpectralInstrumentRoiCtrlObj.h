@@ -19,11 +19,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
-#ifndef SPECTRALSYNCCTRLOBJ_H
-#define SPECTRALSYNCCTRLOBJ_H
+#ifndef SPECTRALROICTRLOBJ_H
+#define SPECTRALROICTRLOBJ_H
 
-#include "lima/HwInterface.h"
-#include "SpectralCamera.h"
+#include "SpectralInstrumentCompatibility.h"
+#include "lima/HwRoiCtrlObj.h"
+#include "SpectralInstrumentCamera.h"
 
 namespace lima
 {
@@ -32,46 +33,29 @@ namespace lima
 
 
 /*******************************************************************
- * \class SyncCtrlObj
- * \brief Control object providing Spectral synchronization interface
+ * \class RoiCtrlObj
+ * \brief Control object providing Spectral Roi interface
  *******************************************************************/
 
-	class LIBSPECTRAL_API SyncCtrlObj : public HwSyncCtrlObj
+	class LIBSPECTRAL_API RoiCtrlObj : public HwRoiCtrlObj
 	{
-	    DEB_CLASS_NAMESPC(DebModCamera, "SyncCtrlObj", "Spectral");
+	    DEB_CLASS_NAMESPC(DebModCamera, "RoiCtrlObj", "Spectral");
 
 	public:
-	    SyncCtrlObj(Camera& cam);
-	    virtual ~SyncCtrlObj();
-    
-	    virtual bool checkTrigMode(TrigMode trig_mode);
-	    virtual void setTrigMode(TrigMode  trig_mode);
-	    virtual void getTrigMode(TrigMode& trig_mode);
+	    RoiCtrlObj(Camera& cam);
+	    virtual ~RoiCtrlObj();
 
-	    virtual void setExpTime(double  exp_time);
-	    virtual void getExpTime(double& exp_time);
-
-	    virtual void setLatTime(double  lat_time);
-	    virtual void getLatTime(double& lat_time);
-
-	    virtual void setNbHwFrames(int  nb_frames);
-	    virtual void getNbHwFrames(int& nb_frames);
-
-	    virtual void getValidRanges(ValidRangesType& valid_ranges);
-
-		virtual void setCooling(bool  cooling);
-	    virtual void getCooling(bool& cooling);
-
-		virtual void getCCDTemperatureFromCamera(float& in_out_value);
-
-		virtual void getReadoutSpeedFromCamera(ushort& in_out_value);
-		virtual void setReadoutSpeed( ushort readout_speed);
+	    virtual void setRoi(const Roi& set_roi);
+	    virtual void getRoi(Roi& hw_roi);
+	    virtual void checkRoi(const Roi& set_roi, Roi& hw_roi);
 
 	private:
 	    Camera& m_cam;
 	};
 
+
     } // namespace Spectral
 } // namespace lima
 
-#endif // SpectralSYNCCTRLOBJ_H
+#endif // SpectralROICTRLOBJ_H
+

@@ -19,12 +19,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
-#ifndef SPECTRALROICTRLOBJ_H
-#define SPECTRALROICTRLOBJ_H
+#ifndef SPECTRALSYNCCTRLOBJ_H
+#define SPECTRALSYNCCTRLOBJ_H
 
-#include "SpectralCompatibility.h"
-#include "lima/HwRoiCtrlObj.h"
-#include "SpectralCamera.h"
+#include "lima/HwInterface.h"
+#include "SpectralInstrumentCamera.h"
 
 namespace lima
 {
@@ -33,29 +32,46 @@ namespace lima
 
 
 /*******************************************************************
- * \class RoiCtrlObj
- * \brief Control object providing Spectral Roi interface
+ * \class SyncCtrlObj
+ * \brief Control object providing Spectral synchronization interface
  *******************************************************************/
 
-	class LIBSPECTRAL_API RoiCtrlObj : public HwRoiCtrlObj
+	class LIBSPECTRAL_API SyncCtrlObj : public HwSyncCtrlObj
 	{
-	    DEB_CLASS_NAMESPC(DebModCamera, "RoiCtrlObj", "Spectral");
+	    DEB_CLASS_NAMESPC(DebModCamera, "SyncCtrlObj", "Spectral");
 
 	public:
-	    RoiCtrlObj(Camera& cam);
-	    virtual ~RoiCtrlObj();
+	    SyncCtrlObj(Camera& cam);
+	    virtual ~SyncCtrlObj();
+    
+	    virtual bool checkTrigMode(TrigMode trig_mode);
+	    virtual void setTrigMode(TrigMode  trig_mode);
+	    virtual void getTrigMode(TrigMode& trig_mode);
 
-	    virtual void setRoi(const Roi& set_roi);
-	    virtual void getRoi(Roi& hw_roi);
-	    virtual void checkRoi(const Roi& set_roi, Roi& hw_roi);
+	    virtual void setExpTime(double  exp_time);
+	    virtual void getExpTime(double& exp_time);
+
+	    virtual void setLatTime(double  lat_time);
+	    virtual void getLatTime(double& lat_time);
+
+	    virtual void setNbHwFrames(int  nb_frames);
+	    virtual void getNbHwFrames(int& nb_frames);
+
+	    virtual void getValidRanges(ValidRangesType& valid_ranges);
+
+		virtual void setCooling(bool  cooling);
+	    virtual void getCooling(bool& cooling);
+
+		virtual void getCCDTemperatureFromCamera(float& in_out_value);
+
+		virtual void getReadoutSpeedFromCamera(ushort& in_out_value);
+		virtual void setReadoutSpeed( ushort readout_speed);
 
 	private:
 	    Camera& m_cam;
 	};
 
-
     } // namespace Spectral
 } // namespace lima
 
-#endif // SpectralROICTRLOBJ_H
-
+#endif // SpectralSYNCCTRLOBJ_H
