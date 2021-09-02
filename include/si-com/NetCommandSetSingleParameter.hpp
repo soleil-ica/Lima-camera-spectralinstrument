@@ -1,37 +1,19 @@
-//###########################################################################
-// This file is part of LImA, a Library for Image Acquisition
-//
-// Copyright (C) : 2009-2020
-// European Synchrotron Radiation Facility
-// BP 220, Grenoble 38043
-// FRANCE
-//
-// This is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 3 of the License, or
-// (at your option) any later version.
-//
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, see <http://www.gnu.org/licenses/>.
-//###########################################################################
-
 //===================================================================================================
-// Class NetAnswerGenericString
+// Class NetCommandSetSingleParameter
 //===================================================================================================
 /****************************************************************************************************
- * \fn NetAnswerGenericString()
+ * \fn NetCommandSetSingleParameter()
  * \brief  constructor
  * \param  none
  * \return none
  ****************************************************************************************************/
-NetAnswerGenericString::NetAnswerGenericString()
+NetCommandSetSingleParameter::NetCommandSetSingleParameter(uint32_t& data_value, const std::string& data_name)
+: m_data_value(data_value),
+  m_data_name(data_name)
 {
-    m_packet_name = "Answer GenericString";
+    m_function_number   = NetCommandHeader::g_function_number_set_single_parameter; // function to be executed (1000 .. 1999)
+    m_packet_name       = "Command SetSingleparameter";
+    m_is_server_command = false; // some commands are server related, others to a camera
 }
 
 /****************************************************************************************************
@@ -40,9 +22,9 @@ NetAnswerGenericString::NetAnswerGenericString()
  * \param  none
  * \return specific packet size
  ****************************************************************************************************/
-std::size_t NetAnswerGenericString::size() const
+std::size_t NetCommandSetSingleParameter::size() const
 {
-    return m_value.size();
+    return  sizeof(m_data_value) + m_data_name.size();
 }
 
 /****************************************************************************************************
@@ -51,9 +33,9 @@ std::size_t NetAnswerGenericString::size() const
  * \param  none
  * \return total packet size
  ****************************************************************************************************/
-std::size_t NetAnswerGenericString::totalSize() const
-{
-    return NetGenericAnswer::totalSize() + NetAnswerGenericString::size();
+std::size_t NetCommandSetSingleParameter::totalSize() const
+{   
+    return NetCommandHeader::totalSize() + NetCommandSetSingleParameter::size();
 }
 
 /****************************************************************************************************
@@ -63,40 +45,34 @@ std::size_t NetAnswerGenericString::totalSize() const
  * \param  in_out_memory_size size of the rest of memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetAnswerGenericString::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
+bool NetCommandSetSingleParameter::read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
 {
-    m_value.resize(in_out_memory_size);
-    memcpy((char*)m_value.data(), reinterpret_cast<const char *>(in_out_memory_data), in_out_memory_size);
+    if(in_out_memory_size != NetCommandSetSingleParameter::size())
+        return false;
 
-    in_out_memory_data += NetAnswerGenericString::size();
+    readData(in_out_memory_data, m_data_value);
 
-    if(in_out_memory_size == NetAnswerGenericString::size())
-    {
-        in_out_memory_size = 0;
-    }
-    else
-    {
-        in_out_memory_size -= NetAnswerGenericString::size();
-    }
+    in_out_memory_size -= NetCommandSetSingleParameter::size();
 
-    return (!in_out_memory_size); // should have a zero value (no more data to be read)
+    return true;
 }
 
 /****************************************************************************************************
- * \fn bool write(uint8_t * out_memory_data, std::size_t & in_out_memory_size)
+ * \fn bool write(uint8_t * out_memory_data, std::size_t in_memory_size)
  * \brief  write the class members values into a memory block
  * \param  in_out_memory_data start of the memory block to be filled (moves to the next data block)
  * \param  in_out_memory_size size of the rest of the memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetAnswerGenericString::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
+bool NetCommandSetSingleParameter::write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
 {
-    if(in_out_memory_size != NetAnswerGenericString::size())
+    if(in_out_memory_size < NetCommandSetSingleParameter::size())
         return false;
 
-    memcpy(reinterpret_cast<char *>(in_out_memory_data), m_value.data(), in_out_memory_size);  
+    writeData(in_out_memory_data, m_data_value);
+    writeData(in_out_memory_data, m_data_name);
 
-    in_out_memory_size -= NetAnswerGenericString::size();
+    in_out_memory_size -= NetCommandSetSingleParameter::size();
 
     return true;
 }
@@ -108,27 +84,27 @@ bool NetAnswerGenericString::write(uint8_t * & in_out_memory_data, std::size_t &
  * \param  in_out_memory_size size of the rest of memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetAnswerGenericString::totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
+bool NetCommandSetSingleParameter::totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size)
 {
-    if(!NetGenericAnswer::totalRead(in_out_memory_data, in_out_memory_size))
+    if(!NetCommandHeader::totalRead(in_out_memory_data, in_out_memory_size))
         return false;
 
-    return NetAnswerGenericString::read(in_out_memory_data, in_out_memory_size);
+    return NetCommandSetSingleParameter::read(in_out_memory_data, in_out_memory_size);
 }
 
 /****************************************************************************************************
- * \fn bool write(uint8_t * out_memory_data, std::size_t & in_out_memory_size)
+ * \fn bool write(uint8_t * out_memory_data, std::size_t in_out_memory_size) const
  * \brief  totally write the class members values into a memory block
  * \param  in_out_memory_data start of the memory block to be filled (moves to the next data block)
  * \param  in_out_memory_size size of the rest of the memory block (the size of the data block will be removed)
  * \return true if success else false in case of error
  ****************************************************************************************************/
-bool NetAnswerGenericString::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
+bool NetCommandSetSingleParameter::totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const
 {
-    if(!NetGenericAnswer::totalWrite(in_out_memory_data, in_out_memory_size))
+    if(!NetCommandHeader::totalWrite(in_out_memory_data, in_out_memory_size))
         return false;
 
-    return NetAnswerGenericString::write(in_out_memory_data, in_out_memory_size);
+    return NetCommandSetSingleParameter::write(in_out_memory_data, in_out_memory_size);
 }
 
 /****************************************************************************************************
@@ -137,10 +113,11 @@ bool NetAnswerGenericString::totalWrite(uint8_t * & in_out_memory_data, std::siz
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetAnswerGenericString::log() const
+void NetCommandSetSingleParameter::log() const
 {
-    std::cout << "-- NetAnswerGenericString content --" << std::endl;
-    std::cout << "m_value: " << m_value << std::endl;
+    std::cout << "-- NetCommandSetSingleParameter content --" << std::endl;
+    std::cout << "m_data_value : " << m_data_value << std::endl;
+    std::cout << "m_data_name : " << m_data_name << std::endl;
 }
 
 /****************************************************************************************************
@@ -149,10 +126,10 @@ void NetAnswerGenericString::log() const
  * \param  none
  * \return none
  ****************************************************************************************************/
-void NetAnswerGenericString::totalLog() const
+void NetCommandSetSingleParameter::totalLog() const
 {
-    NetGenericAnswer::totalLog();
-    NetAnswerGenericString::log();
+    NetCommandHeader::totalLog();
+    NetCommandSetSingleParameter::log();
 }
 
 //###########################################################################

@@ -1,4 +1,4 @@
-.. _camera-ufxc:
+.. _camera-spectralinstrument:
 
 SpectralInstrument camera plugin
 -------------------
@@ -31,6 +31,29 @@ This plugin has been implemented in respect of the mandatory capabilites but wit
 Optional capabilites
 ........................
 
+* Cooling
+
+  This plugin provides the ability to manage camera cooling
+
+  Supported values : 
+
+ - ON
+
+ - OFF
+
+* CCDTemperature
+
+ The plugin provides ability get the current camera temperature
+
+* Readout Speed
+
+ The plugin provide ability to manage DSI sample Time by set readout speed parameter
+
+ Supported values : 
+
+ - 1MHz
+
+ - 690KHz
 
 Configuration
 `````````````

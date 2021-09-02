@@ -22,7 +22,7 @@
 //
 // SpectralCamera.h
 // Created on: October 16, 2020
-// Author: Cédric CASTEL
+// Author: Cï¿½dric CASTEL
 
 #ifndef SPECTRALCAMERA_H
 #define SPECTRALCAMERA_H
@@ -39,7 +39,7 @@
 #include "lima/Debug.h"
 
 // PROJECT
-#include "SpectralCompatibility.h"
+#include "SpectralInstrumentCompatibility.h"
 
 #define REPORT_EVENT(desc) { \
     Event *my_event = new Event(Hardware,Event::Info, Event::Camera, Event::Default,desc); \
@@ -118,6 +118,9 @@ namespace Spectral
         void setExpTime(uint32_t   exp_time_ms);
         void getExpTime(uint32_t & exp_time_ms) const;
 
+        void setCooling(uint8_t in_cooling);
+        void getCooling(uint8_t& out_cooling) const;
+
         void setLatTime(uint32_t   lat_time_ms);
         void getLatTime(uint32_t & lat_time_ms) const;
 
@@ -168,6 +171,25 @@ namespace Spectral
 
         // check if all the frames were acquired
         bool allFramesAcquired() const;
+
+        // get Cooling value
+        bool getCoolingValue();
+
+        //set Cooling value
+        void setCoolingValue(bool in_cooling_value);
+
+        // get CCD Temperature value
+        float& getCCDTemperature();
+
+        void getCCDTemperatureFromCamera(float& in_out_value);
+
+        ushort& getReadoutSpeed();
+
+        void setReadoutSpeed(ushort readout_speed_value);
+
+        void setReadoutSpeedValue(ushort readout_speed_value);
+
+        void getReadoutSpeedFromCamera(ushort& in_out_value);
 
     //-----------------------------------------------------------------------------
 	private:
@@ -226,6 +248,15 @@ namespace Spectral
 
         // condition variable used to protect the update authorize flag
         mutable lima::Cond m_update_authorize_cond;
+
+        // cooler value
+        bool m_cooling_value;
+
+        // CCD Temperature value
+        float m_ccd_temperature_value;
+
+        // Readout speed
+        ushort m_readout_speed_value_sc;
 
 		//-----------------------------------------------------------------------------
         // Constants

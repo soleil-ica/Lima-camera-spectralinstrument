@@ -22,7 +22,7 @@
 /****************************************************************************************************
  * \file   CameraUpdateDataThread.h
  * \brief  header file of the update data thread class.
- * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
+ * \author Cï¿½dric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on October 26, 2020
  ****************************************************************************************************/
 
@@ -30,7 +30,7 @@
 #define SPECTRALCAMERAUPDATEDATATHREAD_H_
 
 // PROJECT
-#include "SpectralCompatibility.h"
+#include "SpectralInstrumentCompatibility.h"
 
 // LIMA 
 #include "lima/Exceptions.h"

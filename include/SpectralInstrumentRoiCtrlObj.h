@@ -1,8 +1,7 @@
-
 //###########################################################################
 // This file is part of LImA, a Library for Image Acquisition
 //
-// Copyright (C) : 2009-2012
+// Copyright (C) : 2009-2020
 // European Synchrotron Radiation Facility
 // BP 220, Grenoble 38043
 // FRANCE
@@ -20,42 +19,43 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
-#include "SpectralBinCtrlObj.h"
+#ifndef SPECTRALROICTRLOBJ_H
+#define SPECTRALROICTRLOBJ_H
 
-using namespace lima;
-using namespace lima::Spectral;
-using namespace std;
+#include "SpectralInstrumentCompatibility.h"
+#include "lima/HwRoiCtrlObj.h"
+#include "SpectralInstrumentCamera.h"
 
-
-//-----------------------------------------------------
-// @brief
-//-----------------------------------------------------
-BinCtrlObj::BinCtrlObj(Camera &cam) : m_cam(cam) 
+namespace lima
 {
-    DEB_CONSTRUCTOR();
-}
+    namespace Spectral
+    {
 
-void BinCtrlObj::setBin(const Bin& aBin)
-{
-    DEB_MEMBER_FUNCT();    
-    m_cam.setBin(aBin);
-}
 
-//-----------------------------------------------------
-// @brief
-//-----------------------------------------------------
-void BinCtrlObj::getBin(Bin &aBin)
-{
-    DEB_MEMBER_FUNCT();    
-    m_cam.getBin(aBin);
-}
+/*******************************************************************
+ * \class RoiCtrlObj
+ * \brief Control object providing Spectral Roi interface
+ *******************************************************************/
 
-//-----------------------------------------------------
-// @brief
-//-----------------------------------------------------
-void BinCtrlObj::checkBin(Bin &aBin)
-{
-    DEB_MEMBER_FUNCT();    
-    m_cam.checkBin(aBin);
-}
+	class LIBSPECTRAL_API RoiCtrlObj : public HwRoiCtrlObj
+	{
+	    DEB_CLASS_NAMESPC(DebModCamera, "RoiCtrlObj", "Spectral");
+
+	public:
+	    RoiCtrlObj(Camera& cam);
+	    virtual ~RoiCtrlObj();
+
+	    virtual void setRoi(const Roi& set_roi);
+	    virtual void getRoi(Roi& hw_roi);
+	    virtual void checkRoi(const Roi& set_roi, Roi& hw_roi);
+
+	private:
+	    Camera& m_cam;
+	};
+
+
+    } // namespace Spectral
+} // namespace lima
+
+#endif // SpectralROICTRLOBJ_H
 

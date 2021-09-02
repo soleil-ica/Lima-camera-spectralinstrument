@@ -22,9 +22,9 @@
 #ifndef SPECTRALBINCTRLOBJ_H
 #define SPECTRALBINCTRLOBJ_H
 
-#include "SpectralCompatibility.h"
+#include "SpectralInstrumentCompatibility.h"
 #include "lima/HwBinCtrlObj.h"
-#include "SpectralCamera.h"
+#include "SpectralInstrumentCamera.h"
 
 namespace lima
 {

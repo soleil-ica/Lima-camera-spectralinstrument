@@ -22,7 +22,7 @@
 /****************************************************************************************************
  * \file   NetPackets.h
  * \brief  header file of network packets classes.
- * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
+ * \author Cï¿½dric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on October 20, 2020
  ****************************************************************************************************/
 
@@ -40,7 +40,7 @@
 #include "lima/SizeUtils.h"
 
 // PROJECT
-#include "SpectralCompatibility.h"
+#include "SpectralInstrumentCompatibility.h"
 
 /*
  *  \namespace lima
@@ -187,6 +187,15 @@ template <> void NetGenericHeader::readData<double>(const uint8_t * & in_out_mem
 // fill the memory data with the class data value. Also, jump to the next value.
 template <> void NetGenericHeader::writeData<double>(uint8_t * & in_out_memory_data, double in_class_data) const;
 
+//------------------------------------------------------------
+// specialized template methods for string
+//------------------------------------------------------------
+// fill the memory data with the class data value. Also, jump to the next value.
+template <> void NetGenericHeader::writeData<std::string>(uint8_t * & in_out_memory_data, std::string in_class_data) const;
+
+// fill the class data with the read value of the memory data. Also, jump to the next value.
+template <> void NetGenericHeader::readData<std::string>(const uint8_t * & in_out_memory_data, std::string& out_class_data);
+
 /*
  *  \class NetCommandHeader
  *  \brief This class is a header command packet class
@@ -259,6 +268,8 @@ protected:
     static const uint16_t g_function_number_terminate_image_retrieve  ; // to set Function number
     static const uint16_t g_function_number_inquire_acquisition_status; // to set Function number
     static const uint16_t g_function_number_configure_packets         ; // to set Function number
+    static const uint16_t g_function_number_set_cooling_value         ; // to set Function number
+    static const uint16_t g_function_number_set_single_parameter      ; // to set Function number
 };
 
 /*
@@ -839,6 +850,17 @@ public:
 
     } HardwareStatus;
 
+
+    //HKS flags
+    typedef enum HKSFlags
+    {
+        TECEnabled = 1,
+        BlackPlateTempSensorOverride = 2,
+        BlackPlateTempSensorPresent = 4,
+        BlackPlateTooHot = 8,
+        AlarmConndition = 16,
+    } HKSFlags;
+
     // constructor
     NetAnswerGetStatus();
 
@@ -863,6 +885,12 @@ protected:
 
     // position of a value in a key status (name,value,unity)
     static const std::size_t g_server_flags_value_position;
+
+    // flag name of the key to read in the complete HKS string returned by the detector
+    static const std::string g_server_flags_hks_name;
+
+    // flag name of the key to read CCD Temperature value
+    static const std::string g_server_flags_ccd_temperature_name;
 };
 
 /*
@@ -896,6 +924,8 @@ protected:
     // miscellaneous group name for keys to read
     static const std::string g_server_flags_group_miscellaneous_name;
 
+    static const std::string g_server_flags_group_control_name;
+
     // keys names
     static const std::string g_server_flags_instrument_model_name         ;
     static const std::string g_server_flags_instrument_serial_number_name ;
@@ -908,6 +938,10 @@ protected:
 
     // position of a value in a key (group,name,value)
     static const std::size_t g_server_flags_value_position;
+
+    static const std::string g_server_flags_control_dsi_sample_time_name;
+    static const std::string g_camera_enum_readout_1MHz_value;
+    static const std::string g_camera_enum_readout_690KHz_value;
 };
 
 /*
@@ -1339,7 +1373,7 @@ protected:
     uint16_t m_parallel_lenght     ; // number of rows in the image
     int32_t  m_total_nb_packets    ; // total number of packets in this image
     int32_t  m_current_packets_nb  ; // number (0..N) of currently transmitted package
-    int32_t  m_offset              ; // packet’s offset into the linear image array
+    int32_t  m_offset              ; // packetï¿½s offset into the linear image array
     uint32_t m_specific_data_lenght; // length of Image structure that is following in bytes
 };
 
@@ -1391,6 +1425,134 @@ public:
 
 protected:
     std::vector<uint16_t> m_image; // 16 bits image part
+};
+
+class NetCommandSetCoolingValue : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetCommandSetCoolingValue();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // get the specific packet size
+    virtual std::size_t size() const;
+
+    // read the values stored into a memory block and fill them into the class members
+    virtual bool read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // write the class members values into a memory block
+    virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // get the total packet size
+    virtual std::size_t totalSize() const;
+
+    // totally read the values stored into a memory block and fill them into the class members
+    virtual bool totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // totally write the class members values into a memory block
+    virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    uint8_t m_cooling_value;
+};
+
+class NetAnswerSetCoolingValue : public NetAnswerCommandDone
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetAnswerSetCoolingValue();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+};
+
+
+class NetCommandSetSingleParameter : public NetCommandHeader
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetCommandSetSingleParameter(uint32_t& data_value, const std::string& data_name);
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // get the specific packet size
+    virtual std::size_t size() const;
+
+    // read the values stored into a memory block and fill them into the class members
+    virtual bool read(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // write the class members values into a memory block
+    virtual bool write(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // get the total packet size
+    virtual std::size_t totalSize() const;
+
+    // totally read the values stored into a memory block and fill them into the class members
+    virtual bool totalRead(const uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size);
+
+    // totally write the class members values into a memory block
+    virtual bool totalWrite(uint8_t * & in_out_memory_data, std::size_t & in_out_memory_size) const;
+
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
+
+protected:
+    uint32_t m_data_value;
+    std::string m_data_name;
+};
+
+class NetAnswerSetSingleParameter : public NetAnswerCommandDone
+{
+    friend class CameraControl;    
+
+public:
+    // constructor
+    NetAnswerSetSingleParameter();
+
+    //-----------------------
+    // not recursive methods
+    //-----------------------
+    // log the class content
+    virtual void log() const;
+
+    //-----------------------
+    // recursive methods
+    //-----------------------
+    // totally log the classes content (recursive)
+    virtual void totalLog() const;
 };
 
 } // namespace Spectral

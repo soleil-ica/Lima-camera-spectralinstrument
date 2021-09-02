@@ -23,7 +23,7 @@
 #define SPECTRALDETINFOCTRLOBJ_H
 
 #include "lima/HwDetInfoCtrlObj.h"
-#include "SpectralCamera.h"
+#include "SpectralInstrumentCamera.h"
 
 namespace lima
 {

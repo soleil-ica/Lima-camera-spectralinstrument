@@ -22,7 +22,7 @@
 /****************************************************************************************************
  * \file   CameraReceiveDataThread.h
  * \brief  header file of the receive data thread class.
- * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
+ * \author Cï¿½dric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on October 22, 2020
  ****************************************************************************************************/
 
@@ -30,7 +30,7 @@
 #define SPECTRALCAMERARECEIVEDATATHREAD_H_
 
 // PROJECT
-#include "SpectralCompatibility.h"
+#include "SpectralInstrumentCompatibility.h"
 
 // LIMA 
 #include "lima/Exceptions.h"

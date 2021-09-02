@@ -46,6 +46,9 @@
                         <sourceDirectory>src</sourceDirectory>
                         <includePaths>
                             <includePath>include</includePath>
+                            <includePath>include/si-com</includePath>
+                            <includePath>include/si-cam</includePath>
+                            <includePath>include/si-ans</includePath>
                         </includePaths>         
                         <!-- define less verbose mode for gcc-->
                         <options>

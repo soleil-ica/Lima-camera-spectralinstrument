@@ -22,13 +22,13 @@
 /****************************************************************************************************
  * \file   CameraReceiveDataThread.cpp
  * \brief  implementation file of the receive data thread class.
- * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
+ * \author Cï¿½dric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on October 22, 2020
  ****************************************************************************************************/
 
 // PROJECT
 #include "CameraReceiveDataThread.h"
-#include "SpectralCamera.h"
+#include "SpectralInstrumentCamera.h"
 #include "CameraControl.h"
 
 // SYSTEM

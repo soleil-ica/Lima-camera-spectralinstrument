@@ -20,7 +20,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
-#include "SpectralSyncCtrlObj.h"
+#include "SpectralInstrumentSyncCtrlObj.h"
 
 using namespace lima;
 using namespace lima::Spectral;
@@ -151,3 +151,50 @@ void SyncCtrlObj::getValidRanges(ValidRangesType& valid_ranges)
     valid_ranges.min_lat_time = static_cast<double>(min_time) / 1000.0;
     valid_ranges.max_lat_time = static_cast<double>(max_time) / 1000.0;
 }
+
+
+//-----------------------------------------------------
+// @brief
+//-----------------------------------------------------
+void SyncCtrlObj::setCooling(bool cooling)
+{
+    m_cam.setCooling(static_cast<uint8_t>(cooling));
+}
+
+//-----------------------------------------------------
+// @brief
+//-----------------------------------------------------
+void SyncCtrlObj::getCooling(bool& cooling)
+{
+    DEB_MEMBER_FUNCT();    
+
+    uint8_t temp;
+    m_cam.getCooling(temp);
+    cooling = static_cast<bool>(temp);
+}
+
+//-----------------------------------------------------
+// @brief
+//-----------------------------------------------------
+void SyncCtrlObj::getCCDTemperatureFromCamera(float& in_out_value)
+{
+    m_cam.getCCDTemperatureFromCamera(in_out_value);
+}
+
+//-----------------------------------------------------
+// @brief
+//-----------------------------------------------------
+void SyncCtrlObj::getReadoutSpeedFromCamera(ushort& in_out_value)
+{
+    m_cam.getReadoutSpeedFromCamera(in_out_value);
+}
+
+//-----------------------------------------------------
+// @brief
+//-----------------------------------------------------
+void SyncCtrlObj::setReadoutSpeed(ushort readout_speed)
+{
+    m_cam.setReadoutSpeed(readout_speed);
+}
+
+

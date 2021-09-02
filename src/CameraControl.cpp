@@ -22,7 +22,7 @@
 /****************************************************************************************************
  * \file   CameraControl.cpp
  * \brief  implementation file of detector communication class.
- * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
+ * \author Cï¿½dric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on October 19, 2020
  ****************************************************************************************************/
 
@@ -50,9 +50,9 @@
 using namespace lima;
 using namespace lima::Spectral;
 
-//#define SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
-//#define SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
-//#define SPECTRAL_CAMERA_CONTROL_ACTIVATE_LIGHT_PACKET_TRACE
+// #define SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
+// #define SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
+// #define SPECTRAL_CAMERA_CONTROL_ACTIVATE_LIGHT_PACKET_TRACE
 
 //------------------------------------------------------------------
 // CameraControl class
@@ -332,6 +332,23 @@ std::size_t CameraControl::getParallelLength() const
 std::size_t CameraControl::getParallelBinning() const
 {
     return m_parallel_binning;
+}
+
+/****************************************************************************************************
+ * \fn std::string getCCDTemperatureFromCamera() const
+ * \brief  get the CCD current temperature
+ * \param  none
+ * \return CCD current temperature
+ ****************************************************************************************************/
+float CameraControl::getCCDTemperatureFromCamera() const
+{
+    return m_ccd_temperature;
+}
+
+
+ushort CameraControl::getReadoutSpeedFromCamera() const
+{
+    return m_readout_speed_value;
 }
 
 /****************************************************************************************************
@@ -718,7 +735,6 @@ bool CameraControl::receive(uint8_t * out_buffer, const int in_buffer_lenght, in
             break;
         }
     }
-
     return true;
 }
 
@@ -913,7 +929,6 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
 
     if(!receiveSubPacket(&header, net_buffer, out_error))
         return false;
-
 #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
     header.log();
 #endif
@@ -981,7 +996,8 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
 
             if(!receiveSpecificSubPacket(header, answer, &get_status,  net_buffer, out_error))
                 return false;
-
+            //header.log();
+            //answer.log();
             // it's ok, we can "return" the packet
             out_packet = new NetAnswerGetStatus();
         }
@@ -993,13 +1009,15 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
 
             if(!receiveSpecificSubPacket(header, answer, &get_params,  net_buffer, out_error))
                 return false;
-
+            //header.log();
+            //answer.log();
         #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
             get_params.log();
         #endif
 
             // it's ok, we can "return" the packet
             out_packet = new NetAnswerGetCameraParameters();
+            //out_packet->log();
         }
         else
         // settings
@@ -1009,13 +1027,15 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
 
             if(!receiveSpecificSubPacket(header, answer, &get_settings,  net_buffer, out_error))
                 return false;
-
+            //header.log();
+            //answer.log();
         #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE
             get_settings.log();
         #endif
 
             // it's ok, we can "return" the packet
             out_packet = new NetAnswerGetSettings();
+            //out_packet->log();
         }
         else
         // acuisition status
@@ -1118,6 +1138,19 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
                 out_packet = new NetAnswerTerminateImageRetrieve();
             }
             else
+            // set cooling value
+            if(command_done.m_function_number == NetCommandHeader::g_function_number_set_cooling_value)
+            {
+                // it's ok, we can "return" the packet
+                out_packet = new NetAnswerSetCoolingValue();
+            }
+            else
+            if(command_done.m_function_number == NetCommandHeader::g_function_number_set_single_parameter)
+            {
+                // it's ok, we can "return" the packet
+                out_packet = new NetAnswerSetSingleParameter();
+            }
+            else
             {
                 DEB_ERROR() << "CameraControl::receivePacket - Unknown command done function type: " << command_done.m_function_number << "!";
                 return false;
@@ -1183,7 +1216,6 @@ bool CameraControl::receivePacket(NetGenericHeader * & out_packet, int32_t & out
 #ifdef SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
     DEB_TRACE() << "received " << out_packet->m_packet_name << " packet.";
 #endif
-
     return true;
 }
 
@@ -1370,7 +1402,6 @@ bool CameraControl::getPacket(NetPacketsGroupId in_group_id, NetGenericHeader * 
     {
         out_packet = group->take();
     }
-
     return (out_packet != NULL);
 }
 
@@ -1439,6 +1470,8 @@ bool CameraControl::getAcquisitionStatusPacket(NetGenericHeader * & out_packet)
  ****************************************************************************************************/
 void CameraControl::flushAcknowledgePackets()
 {
+    DEB_MEMBER_FUNCT();
+
     NetGenericHeader * old_packet;
 
     while(getAcknowledgePacket(old_packet))
@@ -1459,6 +1492,8 @@ void CameraControl::flushAcknowledgePackets()
  ****************************************************************************************************/
 void CameraControl::flushAcquisitionStatusPackets()
 {
+    DEB_MEMBER_FUNCT();
+
     NetGenericHeader * old_packet;
 
     while(getAcquisitionStatusPacket(old_packet))
@@ -1479,6 +1514,8 @@ void CameraControl::flushAcquisitionStatusPackets()
  ****************************************************************************************************/
 void CameraControl::flushImagePackets()
 {
+    DEB_MEMBER_FUNCT();
+
     NetGenericHeader * old_packet;
 
     while(getImagePacket(old_packet))
@@ -1693,7 +1730,9 @@ bool CameraControl::updateStatus()
     DEB_MEMBER_FUNCT();
 
     std::string          status        ;
+    std::string         values         ;
     int                  status_value  ;
+    int                hks_status_value;
     std::string          line          ;
     std::string          sub_string    ;
     DetectorStatus       new_status    ;
@@ -1746,8 +1785,55 @@ bool CameraControl::updateStatus()
             }
         }
 
+
+        if(!findLineWithKey(status, NetAnswerGetStatus::g_server_flags_hks_name, line))
+            goto done;
+
+
+        if(!getSubString(line, NetAnswerGetStatus::g_server_flags_value_position, 
+                         NetAnswerGetStatus::g_server_flags_delimiter, sub_string))
+            goto done;
+
+        if(!convertStringToInt(sub_string, hks_status_value))
+            goto done;
+
+
+        if(status_value & NetAnswerGetStatus::HardwareStatus::CameraConnected)
+        {
+            if(!(status_value & NetAnswerGetStatus::HardwareStatus::ConfigurationError))
+            {
+                if(hks_status_value & NetAnswerGetStatus::HKSFlags::TECEnabled)
+                {
+                    m_cooling_value = true;
+                }
+                else
+                {
+                    m_cooling_value = false;
+                }
+            }
+        }
+
+        if(!findLineWithKey(status, NetAnswerGetStatus::g_server_flags_ccd_temperature_name, line))
+            goto done;
+
+
+        if(!getSubString(line, NetAnswerGetStatus::g_server_flags_value_position, 
+                         NetAnswerGetStatus::g_server_flags_delimiter, sub_string))
+            goto done;
+
+        if(status_value & NetAnswerGetStatus::HardwareStatus::CameraConnected)
+        {
+            if(!(status_value & NetAnswerGetStatus::HardwareStatus::ConfigurationError))
+            {
+                m_ccd_temperature = std::stof(sub_string);
+                
+            }
+        }
+
         m_latest_status = new_status;
         result          = true      ;
+
+
     }
 
 done:
@@ -1800,6 +1886,7 @@ bool CameraControl::initCameraParameters()
                                        NetAnswerGetCameraParameters::g_server_flags_delimiter,
                                        line))
             goto done;
+
 
         if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position, 
                          NetAnswerGetCameraParameters::g_server_flags_delimiter, m_model))
@@ -1890,6 +1977,28 @@ bool CameraControl::updateSettings()
     NetGenericHeader     * second_packet   = NULL ;
     NetCommandHeader     * command         = new NetCommandGetSettings();
 
+    NetAnswerGetCameraParameters * params_packet = NULL;
+
+    NetGenericHeader * cam_param_second_packet = NULL ;
+    NetCommandHeader * cam_param_command       = new NetCommandGetCameraParameters();
+
+    std::string        values    ;
+    std::string        line      ;
+    std::string        sub_string;
+    int readout_speed = 0;
+
+    // send the command and treat the acknowledge
+    if(!sendCommandWithAck(cam_param_command, error))
+        goto done;
+
+    // wait for the status
+    if(!waitDataPacket(NetGenericAnswer::g_data_type_get_camera_parameters, cam_param_second_packet))
+        goto done;
+
+    // we need to manage the data 
+    params_packet = dynamic_cast<NetAnswerGetCameraParameters *>(cam_param_second_packet);
+
+
     // send the command and treat the acknowledge
     if(!sendCommandWithAck(command, error))
         goto done;
@@ -1901,6 +2010,7 @@ bool CameraControl::updateSettings()
     // we need to manage the settings data 
     settings_packet = dynamic_cast<NetAnswerGetSettings *>(second_packet);
 
+
     if(!settings_packet->hasError())
     {
         m_exposure_time_msec   = settings_packet->m_exposure_time_msec; 
@@ -1910,10 +2020,30 @@ bool CameraControl::updateSettings()
         m_serial_binning       = settings_packet->m_serial_binning; 
         m_parallel_origin      = settings_packet->m_parallel_origin; 
         m_parallel_length      = settings_packet->m_parallel_length; 
-        m_parallel_binning     = settings_packet->m_parallel_binning; 
+        m_parallel_binning     = settings_packet->m_parallel_binning;
         m_acquisition_type     = static_cast<NetAnswerGetSettings::AcquisitionType>(settings_packet->m_acquisition_type);
         m_acquisition_mode     = static_cast<NetAnswerGetSettings::AcquisitionMode>(settings_packet->m_acquisition_mode);
         result                 = true;
+
+    }
+
+    if(!params_packet->hasError())
+    {
+        values = params_packet->m_value;
+
+        if(!findLineWithTwoKey(values, NetAnswerGetCameraParameters::g_server_flags_group_control_name,
+                                       NetAnswerGetCameraParameters::g_server_flags_control_dsi_sample_time_name,
+                                       NetAnswerGetCameraParameters::g_server_flags_delimiter,
+                                       line))
+            goto done;
+
+        if(!getSubString(line, NetAnswerGetCameraParameters::g_server_flags_value_position,
+                         NetAnswerGetCameraParameters::g_server_flags_delimiter, sub_string))
+            goto done;
+
+        if(!convertStringToInt(sub_string, readout_speed) )
+            goto done;
+        m_readout_speed_value = static_cast<ushort>(readout_speed);
     }
 
 done:
@@ -2412,6 +2542,107 @@ done:
     if(command       != NULL) delete command      ;
 
     return result;
+}
+
+
+/****************************************************************************************************
+ * \fn bool setCoolingValue(uint32_t in_cooling_value)
+ * \brief  change the cooling value by sending a command to the hardware
+ * \param  in_cooling_value  cooling value
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::setCoolingValue(uint8_t in_cooling_value)
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t                error           = 0    ;
+    bool                   result          = false;
+    NetGenericHeader     * second_packet   = NULL ;
+    NetCommandHeader     * command         = new NetCommandSetCoolingValue();
+    
+    NetAnswerSetCoolingValue  * answer_packet         = NULL ;
+    NetCommandSetCoolingValue * command_cooling_value = dynamic_cast<NetCommandSetCoolingValue *>(command);
+
+    command_cooling_value->m_cooling_value = static_cast<bool>(in_cooling_value); 
+
+    // send the command and treat the acknowledge
+    if(!sendCommandWithAck(command, error))
+        goto done;
+
+    // wait for the command done
+    if(!waitCommandDonePacket(NetCommandHeader::g_function_number_set_cooling_value, second_packet))
+        goto done;
+
+    // we need to manage the data 
+    answer_packet = dynamic_cast<NetAnswerSetCoolingValue *>(second_packet);
+
+    if(!answer_packet->hasError())
+    {
+        m_cooling_value = in_cooling_value;
+        result = true;
+    }
+
+done:
+    if(second_packet != NULL) delete second_packet;
+    if(command       != NULL) delete command      ;
+
+    return result;
+}
+
+
+/****************************************************************************************************
+ * \fn bool setReadoutSpeedValue(uint32_t& readout_speed_value)
+ * \brief  change the readout speed value by sending a command to the hardware
+ * \param  readout_speed_value  readout speed value
+ * \return true if succeed, false in case of error
+ ****************************************************************************************************/
+bool CameraControl::setReadoutSpeedValue(uint32_t readout_speed_value)
+{
+    DEB_MEMBER_FUNCT();
+
+    int32_t                error           = 0    ;
+    bool                   result          = false;
+    NetGenericHeader     * second_packet   = NULL ;
+    const std::string& readout_speed_name  = "DSI Sample Time\0";
+    NetCommandHeader     * command         = new NetCommandSetSingleParameter(readout_speed_value, readout_speed_name);
+    
+    NetAnswerSetSingleParameter  * answer_packet         = NULL ;
+    NetCommandSetSingleParameter * command_readout_speed_value = dynamic_cast<NetCommandSetSingleParameter *>(command);
+
+    command_readout_speed_value->m_data_value = static_cast<ushort>(readout_speed_value); 
+
+    // send the command and treat the acknowledge
+    if(!sendCommandWithAck(command, error))
+        goto done;
+
+    // wait for the command done
+    if(!waitCommandDonePacket(NetCommandHeader::g_function_number_set_single_parameter, second_packet))
+        goto done;
+
+    // we need to manage the data 
+    answer_packet = dynamic_cast<NetAnswerSetSingleParameter *>(second_packet);
+
+    if(!answer_packet->hasError())
+    {
+        result = true;
+    }
+
+done:
+    if(second_packet != NULL) delete second_packet;
+    if(command       != NULL) delete command      ;
+
+    return result;
+}
+
+/****************************************************************************************************
+ * \fn uint8_t getCoolingValue() const
+ * \brief  get the Cooling value
+ * \param  none
+ * \return Cooling value
+ ****************************************************************************************************/
+uint8_t CameraControl::getCoolingValue() const
+{
+    return  static_cast<uint8_t>(m_cooling_value);
 }
 
 /**************************************************************************************************
