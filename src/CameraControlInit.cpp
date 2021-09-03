@@ -22,7 +22,7 @@
 /****************************************************************************************************
  * \file   CameraControlInit.cpp
  * \brief  implementation file of camera control init parameters structure.
- * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
+ * \author Cï¿½dric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on November 02, 2020
  ****************************************************************************************************/
 
@@ -30,7 +30,7 @@
 #include "CameraControlInit.h"
 
 using namespace lima;
-using namespace lima::Spectral;
+using namespace lima::SpectralInstrument;
 
 //------------------------------------------------------------------
 // CameraControlInit structure

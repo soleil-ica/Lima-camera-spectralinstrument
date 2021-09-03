@@ -26,8 +26,8 @@
  * \date   Created on October 28, 2020
  ****************************************************************************************************/
 
-#ifndef SPECTRALCAMERAACQTHREAD_H_
-#define SPECTRALCAMERAACQTHREAD_H_
+#ifndef SPECTRALINSTRUMENTCAMERAACQTHREAD_H_
+#define SPECTRALINSTRUMENTCAMERAACQTHREAD_H_
 
 // PROJECT
 #include "SpectralInstrumentCompatibility.h"
@@ -46,9 +46,9 @@
 namespace lima
 {
 /*
- *  \namespace Spectral
+ *  \namespace SpectralInstrument
  */
-namespace Spectral 
+namespace SpectralInstrument 
 {
     // predefined the internal timer used in the thread
     class InternalTimer;
@@ -59,7 +59,7 @@ namespace Spectral
  */
 class CameraAcqThread : public CmdThread
 {
-    DEB_CLASS_NAMESPC(DebModCamera, "CameraAcqThread", "Spectral");
+    DEB_CLASS_NAMESPC(DebModCamera, "CameraAcqThread", "SpectralInstrument");
 
 public:
 	// Status
@@ -158,7 +158,7 @@ private :
     static CameraAcqThread * g_singleton;
 };
 
-} // namespace Spectral
+} // namespace SpectralInstrument
 } // namespace lima
 
 #endif // SPECTRALCAMERAACQTHREAD_H_

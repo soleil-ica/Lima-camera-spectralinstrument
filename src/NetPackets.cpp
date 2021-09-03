@@ -37,7 +37,7 @@
 #include "lima/Debug.h"
 
 using namespace lima;
-using namespace lima::Spectral;
+using namespace lima::SpectralInstrument;
 
 //===================================================================================================
 static uint64_t htonll(uint64_t in_value);

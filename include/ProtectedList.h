@@ -26,8 +26,8 @@
  * \date   Created on October 23, 2020
  ****************************************************************************************************/
 
-#ifndef SPECTRALPROTECTEDLIST_H
-#define SPECTRALPROTECTEDLIST_H
+#ifndef SPECTRALINSTRUMENTPROTECTEDLIST_H
+#define SPECTRALINSTRUMENTPROTECTEDLIST_H
 
 // SYSTEM
 #include <cstddef>
@@ -54,9 +54,9 @@
 namespace lima
 {
 /*
- *  \namespace Spectral
+ *  \namespace SpectralInstrument
  */
-namespace Spectral 
+namespace SpectralInstrument 
 {
 /*
  *  \class ProtectedList
@@ -140,7 +140,7 @@ private:
 // include the implementation file of the ProtectedList class to separate interface and implementation
 #include "ProtectedList.hpp"
 
-} // namespace Spectral
+} // namespace SpectralInstrument
 } // namespace lima
 
-#endif //// SPECTRALPROTECTEDLIST_H
+#endif //// SPECTRALINSTRUMENTPROTECTEDLIST_H

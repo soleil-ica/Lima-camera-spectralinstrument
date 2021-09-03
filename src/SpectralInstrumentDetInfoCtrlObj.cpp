@@ -22,7 +22,7 @@
 #include "SpectralInstrumentDetInfoCtrlObj.h"
 
 using namespace lima;
-using namespace lima::Spectral;
+using namespace lima::SpectralInstrument;
 using namespace std;
 
 

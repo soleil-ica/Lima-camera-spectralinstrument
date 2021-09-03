@@ -19,8 +19,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
-#ifndef SPECTRALCOMPATIBILITY_H
-#define SPECTRALCOMPATIBILITY_H
+#ifndef SPECTRALINSTRUMENTCOMPATIBILITY_H
+#define SPECTRALINSTRUMENTCOMPATIBILITY_H
 
 #if defined(WIN32)
 #ifdef LIBSPECTRAL_EXPORTS

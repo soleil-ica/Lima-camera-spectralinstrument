@@ -19,8 +19,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
-#ifndef SPECTRALBINCTRLOBJ_H
-#define SPECTRALBINCTRLOBJ_H
+#ifndef SPECTRALINSTRUMENTBINCTRLOBJ_H
+#define SPECTRALINSTRUMENTBINCTRLOBJ_H
 
 #include "SpectralInstrumentCompatibility.h"
 #include "lima/HwBinCtrlObj.h"
@@ -28,16 +28,16 @@
 
 namespace lima
 {
-    namespace Spectral
+    namespace SpectralInstrument
     {
 
 /*******************************************************************
  * \class BinCtrlObj
- * \brief Control object providing Spectral Bin interface
+ * \brief Control object providing SpectralInstrument Bin interface
  *******************************************************************/
 	class LIBSPECTRAL_API BinCtrlObj : public HwBinCtrlObj
 	{
-	    DEB_CLASS_NAMESPC(DebModCamera, "BinCtrlObj", "Spectral");
+	    DEB_CLASS_NAMESPC(DebModCamera, "BinCtrlObj", "SpectralInstrument");
 	  public:
 	    BinCtrlObj(Camera& cam);
 	    virtual ~BinCtrlObj() {}
@@ -51,7 +51,7 @@ namespace lima
 
 	};
     
-    } // namespace Spectral
+    } // namespace SpectralInstrument
 } // namespace lima
 
-#endif // SPECTRALBINCTRLOBJ_H
+#endif // SPECTRALINSTRUMENTBINCTRLOBJ_H

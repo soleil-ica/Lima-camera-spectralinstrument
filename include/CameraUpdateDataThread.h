@@ -26,8 +26,8 @@
  * \date   Created on October 26, 2020
  ****************************************************************************************************/
 
-#ifndef SPECTRALCAMERAUPDATEDATATHREAD_H_
-#define SPECTRALCAMERAUPDATEDATATHREAD_H_
+#ifndef SPECTRALINSTRUMENTCAMERAUPDATEDATATHREAD_H_
+#define SPECTRALINSTRUMENTCAMERAUPDATEDATATHREAD_H_
 
 // PROJECT
 #include "SpectralInstrumentCompatibility.h"
@@ -46,9 +46,9 @@
 namespace lima
 {
 /*
- *  \namespace Spectral
+ *  \namespace SpectralInstrument
  */
-namespace Spectral 
+namespace SpectralInstrument 
 {
 /*
  *  \class CameraUpdateDataThread
@@ -56,7 +56,7 @@ namespace Spectral
  */
 class CameraUpdateDataThread : public CmdThread
 {
-    DEB_CLASS_NAMESPC(DebModCamera, "CameraUpdateDataThread", "Spectral");
+    DEB_CLASS_NAMESPC(DebModCamera, "CameraUpdateDataThread", "SpectralInstrument");
 
 public:
 	// Status
@@ -127,7 +127,7 @@ private :
     static CameraUpdateDataThread * g_singleton;
 };
 
-} // namespace Spectral
+} // namespace SpectralInstrument
 } // namespace lima
 
 #endif // SPECTRALCAMERAUPDATEDATATHREAD_H_

@@ -19,25 +19,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
-#ifndef SPECTRALDETINFOCTRLOBJ_H
-#define SPECTRALDETINFOCTRLOBJ_H
+#ifndef SPECTRALINSTRUMENTDETINFOCTRLOBJ_H
+#define SPECTRALINSTRUMENTDETINFOCTRLOBJ_H
 
 #include "lima/HwDetInfoCtrlObj.h"
 #include "SpectralInstrumentCamera.h"
 
 namespace lima
 {
-    namespace Spectral
+    namespace SpectralInstrument
     {
 
 /*******************************************************************
  * \class DetInfoCtrlObj
- * \brief Control object providing Spectral detector info interface
+ * \brief Control object providing SpectralInstrument detector info interface
  *******************************************************************/
 
 	class LIBSPECTRAL_API DetInfoCtrlObj : public HwDetInfoCtrlObj
 	{
-	    DEB_CLASS_NAMESPC(DebModCamera, "DetInfoCtrlObj", "Spectral");
+	    DEB_CLASS_NAMESPC(DebModCamera, "DetInfoCtrlObj", "SpectralInstrument");
 
 	public:
 	    DetInfoCtrlObj(Camera& cam);
@@ -61,7 +61,7 @@ namespace lima
 	    Camera& m_cam;
 	};
 
-    } // namespace Spectral
+    } // namespace SpectralInstrument
 } // namespace lima
 
-#endif // SpectralDETINFOCTRLOBJ_H
+#endif // SPECTRALINSTRUMENTDETINFOCTRLOBJ_H

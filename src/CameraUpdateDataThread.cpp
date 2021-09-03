@@ -42,7 +42,7 @@
 #include "lima/HwEventCtrlObj.h"
 
 using namespace lima;
-using namespace lima::Spectral;
+using namespace lima::SpectralInstrument;
 
 //------------------------------------------------------------------
 // singleton management
@@ -191,7 +191,7 @@ void CameraUpdateDataThread::execStartUpdate()
 void CameraUpdateDataThread::manageError(std::string & in_error_text)
 {
     Event *my_event = new Event(Hardware, Event::Info, Event::Camera, Event::Default, in_error_text);
-    Spectral::Camera::getInstance()->getEventCtrlObj()->reportEvent(my_event);
+    SpectralInstrument::Camera::getInstance()->getEventCtrlObj()->reportEvent(my_event);
 }
 
 //------------------------------------------------------------------

@@ -26,8 +26,8 @@
  * \date   Created on October 22, 2020
  ****************************************************************************************************/
 
-#ifndef SPECTRALCAMERARECEIVEDATATHREAD_H_
-#define SPECTRALCAMERARECEIVEDATATHREAD_H_
+#ifndef SPECTRALINSTRUMENTCAMERARECEIVEDATATHREAD_H_
+#define SPECTRALINSTRUMENTCAMERARECEIVEDATATHREAD_H_
 
 // PROJECT
 #include "SpectralInstrumentCompatibility.h"
@@ -46,9 +46,9 @@
 namespace lima
 {
 /*
- *  \namespace Spectral
+ *  \namespace SpectralInstrument
  */
-namespace Spectral 
+namespace SpectralInstrument 
 {
 /*
  *  \class CameraReceiveDataThread
@@ -56,7 +56,7 @@ namespace Spectral
  */
 class CameraReceiveDataThread : public CmdThread
 {
-    DEB_CLASS_NAMESPC(DebModCamera, "CameraReceiveDataThread", "Spectral");
+    DEB_CLASS_NAMESPC(DebModCamera, "CameraReceiveDataThread", "SpectralInstrument");
 
 public:
 	// Status
@@ -127,9 +127,9 @@ private :
     static CameraReceiveDataThread * g_singleton;
 };
 
-} // namespace Spectral
+} // namespace SpectralInstrument
 } // namespace lima
 
-#endif // SPECTRALCAMERARECEIVEDATATHREAD_H_
+#endif // SPECTRALINSTRUMENTCAMERARECEIVEDATATHREAD_H_
 
 /*************************************************************************/

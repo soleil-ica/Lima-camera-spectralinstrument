@@ -19,26 +19,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
-#ifndef SPECTRALSYNCCTRLOBJ_H
-#define SPECTRALSYNCCTRLOBJ_H
+#ifndef SPECTRALINSTRUMENTSYNCCTRLOBJ_H
+#define SPECTRALINSTRUMENTSYNCCTRLOBJ_H
 
 #include "lima/HwInterface.h"
 #include "SpectralInstrumentCamera.h"
 
 namespace lima
 {
-    namespace Spectral
+    namespace SpectralInstrument
     {
 
 
 /*******************************************************************
  * \class SyncCtrlObj
- * \brief Control object providing Spectral synchronization interface
+ * \brief Control object providing SpectralInstrument synchronization interface
  *******************************************************************/
 
 	class LIBSPECTRAL_API SyncCtrlObj : public HwSyncCtrlObj
 	{
-	    DEB_CLASS_NAMESPC(DebModCamera, "SyncCtrlObj", "Spectral");
+	    DEB_CLASS_NAMESPC(DebModCamera, "SyncCtrlObj", "SpectralInstrument");
 
 	public:
 	    SyncCtrlObj(Camera& cam);
@@ -71,7 +71,7 @@ namespace lima
 	    Camera& m_cam;
 	};
 
-    } // namespace Spectral
+    } // namespace SpectralInstrument
 } // namespace lima
 
-#endif // SpectralSYNCCTRLOBJ_H
+#endif // SPECTRALINSTRUMENTSYNCCTRLOBJ_H

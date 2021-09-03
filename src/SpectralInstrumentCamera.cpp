@@ -34,7 +34,7 @@
 #include "CameraAcqThread.h"
 
 using namespace lima;
-using namespace lima::Spectral;
+using namespace lima::SpectralInstrument;
 
 //-----------------------------------------------------------------------------
 const double Camera::g_pixel_size_x = 75e-6; // pixel size is ? micron
@@ -92,7 +92,7 @@ Camera::Camera(const std::string & connection_address          ,
 
     setDataUpdateDelayMsec(data_update_delay_msec);
 
-    DEB_TRACE() << "Starting Spectral camera...";
+    DEB_TRACE() << "Starting SpectralInstrument camera...";
 
     // give access to the camera instance as a singleton
     g_singleton = this;
@@ -168,7 +168,7 @@ Camera::~Camera()
     CameraUpdateDataThread::release();
 
     // Closing camera
-    DEB_TRACE() << "Shutdown Spectral camera...";
+    DEB_TRACE() << "Shutdown SpectralInstrument camera...";
 
     // releasing the camera control instance (also, disconnecting the tcp/ip connection).
     CameraControl::release();

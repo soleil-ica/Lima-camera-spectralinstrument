@@ -48,7 +48,7 @@
 #include "lima/Debug.h"
 
 using namespace lima;
-using namespace lima::Spectral;
+using namespace lima::SpectralInstrument;
 
 // #define SPECTRAL_CAMERA_CONTROL_ACTIVATE_NETWORK_TRACE
 // #define SPECTRAL_CAMERA_CONTROL_ACTIVATE_PACKET_TRACE

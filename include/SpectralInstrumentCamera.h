@@ -20,12 +20,12 @@
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
 //
-// SpectralCamera.h
+// SpectralInstrumentCamera.h
 // Created on: October 16, 2020
 // Author: C�dric CASTEL
 
-#ifndef SPECTRALCAMERA_H
-#define SPECTRALCAMERA_H
+#ifndef SPECTRALINSTRUMENTCAMERA_H
+#define SPECTRALINSTRUMENTCAMERA_H
 
 // SYSTEM
 #include <ostream>
@@ -48,18 +48,18 @@
 
 namespace lima
 {
-namespace Spectral
+namespace SpectralInstrument
 {
     // pre-defines the BufferCtrlObj class
     class BufferCtrlObj;
 
    /*******************************************************************
     * \class Camera
-    * \brief object controlling the Spectral camera
+    * \brief object controlling the SpectralInstrument camera
     *******************************************************************/
 	class LIBSPECTRAL_API Camera
 	{
-	    DEB_CLASS_NAMESPC(DebModCamera, "Camera", "Spectral");
+	    DEB_CLASS_NAMESPC(DebModCamera, "Camera", "SpectralInstrument");
 
     //-----------------------------------------------------------------------------
 	public:
@@ -141,7 +141,7 @@ namespace Spectral
 	    bool isBinningAvailable();       
         bool isBinningSupported(const int bin_value);
 
-	    //- Spectral specific
+	    //- SpectralInstrument specific
         // access to the singleton
         static Camera * getInstance();
 
@@ -211,7 +211,7 @@ namespace Spectral
         HwEventCtrlObj      m_event_ctrl_obj;
         
         //-----------------------------------------------------------------------------
-		//- Spectral
+		//- SpectralInstrument
         //-----------------------------------------------------------------------------
         // used to give acess to the Camera instance like a singleton
         static Camera * g_singleton;
@@ -264,8 +264,8 @@ namespace Spectral
         static const double g_pixel_size_x;
         static const double g_pixel_size_y;
 	};
-} // namespace Spectral
+} // namespace SpectralInstrument
 } // namespace lima
 
 
-#endif // SpectralCAMERA_H
+#endif // SPECTRALINSTRUMENTCAMERA_H

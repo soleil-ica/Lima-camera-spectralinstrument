@@ -23,7 +23,7 @@
 #include <algorithm>
 
 using namespace lima;
-using namespace lima::Spectral;
+using namespace lima::SpectralInstrument;
 using namespace std;
 
 
@@ -120,10 +120,10 @@ void Interface::getStatus(StatusType& status)
 {
     DEB_MEMBER_FUNCT();
     
-    Camera::Status Spectral_status = Camera::Ready;
-    Spectral_status = m_cam.getStatus();
+    Camera::Status SpectralInstrument_status = Camera::Ready;
+    SpectralInstrument_status = m_cam.getStatus();
 
-    switch (Spectral_status)
+    switch (SpectralInstrument_status)
     {
         case Camera::Ready:
             status.set(HwInterface::StatusType::Ready);
@@ -157,9 +157,9 @@ int Interface::getNbHwAcquiredFrames()
 }
 
 /////////////////////////////////////////////////////////////
-// HERE we just map setter/getter methods of the SpectralCamera 
+// HERE we just map setter/getter methods of the SpectralInstrumentCamera 
 // class for a public access, stupid but useful !!
-// one could merge SpectralCamera and SpectralInterface, ok next 
+// one could merge SpectralInstrumentCamera and SpectralInstrumentInterface, ok next 
 // release.
 /////////////////////////////////////////////////////////////
 

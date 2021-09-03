@@ -22,12 +22,12 @@
 /****************************************************************************************************
  * \file   CameraSingleton.h
  * \brief  header file of CameraSingleton template class.
- * \author Cédric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
+ * \author Cï¿½dric Castel - SOLEIL (MEDIANE SYSTEME - IT consultant) 
  * \date   Created on October 19, 2020
  ****************************************************************************************************/
 
-#ifndef SPECTRALSINGLETON_H_
-#define SPECTRALSINGLETON_H_
+#ifndef SPECTRALINSTRUMENTSINGLETON_H_
+#define SPECTRALINSTRUMENTSINGLETON_H_
 
 // SYSTEM
 #include <cstddef>
@@ -40,9 +40,9 @@
 namespace lima
 {
 /*
- *  \namespace Spectral
+ *  \namespace SpectralInstrument
  */
-namespace Spectral
+namespace SpectralInstrument
 {
 /*
  *  \class CameraSingleton
@@ -83,7 +83,7 @@ namespace Spectral
     // include the implementation file of the CameraSingleton class to separate interface and implementation
     #include "CameraSingleton.hpp"
 
-} // namespace Spectral
+} // namespace SpectralInstrument
 } // namespace lima
 
-#endif //// SPECTRALSINGLETON_H_
+#endif //// SPECTRALINSTRUMENTSINGLETON_H_
