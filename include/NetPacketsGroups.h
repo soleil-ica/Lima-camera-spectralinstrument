@@ -27,8 +27,8 @@
  * \date   Created on October 23, 2020
  ****************************************************************************************************/
 
-#ifndef SPECTRALNETPACKETSMAP_H
-#define SPECTRALNETPACKETSMAP_H
+#ifndef SPECTRALINSTRUMENTNETPACKETSMAP_H
+#define SPECTRALINSTRUMENTNETPACKETSMAP_H
 
 // SYSTEM
 #include <cstdlib>
@@ -47,9 +47,9 @@
 namespace lima
 {
 /*
- *  \namespace Spectral
+ *  \namespace SpectralInstrument
  */
-namespace Spectral 
+namespace SpectralInstrument 
 {
 /***********************************************************************
  * AsyncRequestGroup containers types
@@ -102,7 +102,7 @@ private:
     NetPacketsMap m_container;
 };
 
-} // namespace Spectral
+} // namespace SpectralInstrument
 } // namespace lima
 
-#endif // SPECTRALNETPACKETSMAP_H
+#endif // SPECTRALINSTRUMENTNETPACKETSMAP_H

@@ -39,7 +39,7 @@
 #include "lima/Debug.h"
 
 using namespace lima;
-using namespace lima::Spectral;
+using namespace lima::SpectralInstrument;
 
 //#define NET_PACKETS_GROUPS_DEBUG
 

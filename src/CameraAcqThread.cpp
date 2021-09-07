@@ -42,12 +42,12 @@
 #include "lima/HwEventCtrlObj.h"
 
 using namespace lima;
-using namespace lima::Spectral;
+using namespace lima::SpectralInstrument;
 
 //------------------------------------------------------------------
 // internal timer management
 //------------------------------------------------------------------
-class lima::Spectral::InternalTimer
+class lima::SpectralInstrument::InternalTimer
 {
 public:
     // init the start time
@@ -566,7 +566,7 @@ bool CameraAcqThread::imageLatency(const InternalTimer & in_start_timer)
 void CameraAcqThread::manageError(std::string & in_error_text)
 {
     Event *my_event = new Event(Hardware, Event::Info, Event::Camera, Event::Default, in_error_text);
-    Spectral::Camera::getInstance()->getEventCtrlObj()->reportEvent(my_event);
+    SpectralInstrument::Camera::getInstance()->getEventCtrlObj()->reportEvent(my_event);
 }
 
 //------------------------------------------------------------------

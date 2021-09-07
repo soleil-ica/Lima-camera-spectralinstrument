@@ -26,8 +26,8 @@
  * \date   Created on October 19, 2020
  ****************************************************************************************************/
 
-#ifndef SPECTRALCAMERACONTROL_H
-#define SPECTRALCAMERACONTROL_H
+#ifndef SPECTRALINSTRUMENTCAMERACONTROL_H
+#define SPECTRALINSTRUMENTCAMERACONTROL_H
 
 // SYSTEM
 #include <cstdlib>
@@ -67,9 +67,9 @@
 namespace lima
 {
 /*
- *  \namespace Spectral
+ *  \namespace SpectralInstrument
  */
-namespace Spectral 
+namespace SpectralInstrument 
 {
 /*
  *  \class CameraControl
@@ -77,7 +77,7 @@ namespace Spectral
  */
 class CameraControl : public CameraSingleton<CameraControl>
 {
-    DEB_CLASS_NAMESPC(DebModCamera, "CameraControl", "Spectral");
+    DEB_CLASS_NAMESPC(DebModCamera, "CameraControl", "SpectralInstrument");
 
     // we need to gain access to the destructor for the management of our singleton
     friend class CameraSingleton<CameraControl>;
@@ -444,7 +444,7 @@ class CameraControl : public CameraSingleton<CameraControl>
         ushort m_readout_speed_value;
 };
 
-} // namespace Spectral
+} // namespace SpectralInstrument
 } // namespace lima
 
-#endif // SPECTRALCAMERACONTROL_H
+#endif // SPECTRALINSTRUMENTCAMERACONTROL_H

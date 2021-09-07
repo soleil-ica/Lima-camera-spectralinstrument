@@ -26,8 +26,8 @@
  * \date   Created on October 20, 2020
  ****************************************************************************************************/
 
-#ifndef SPECTRALNETPACKETS_H
-#define SPECTRALNETPACKETS_H
+#ifndef SPECTRALINSTRUMENTNETPACKETS_H
+#define SPECTRALINSTRUMENTNETPACKETS_H
 
 // SYSTEM
 #include <cstdlib>
@@ -48,9 +48,9 @@
 namespace lima
 {
 /*
- *  \namespace Spectral
+ *  \namespace SpectralInstrument
  */
-namespace Spectral 
+namespace SpectralInstrument 
 {
 /*
  *  \class NetGenericHeader
@@ -1555,7 +1555,7 @@ public:
     virtual void totalLog() const;
 };
 
-} // namespace Spectral
+} // namespace SpectralInstrument
 } // namespace lima
 
-#endif // SPECTRALNETPACKETS_H
+#endif // SPECTRALINSTRUMENTNETPACKETS_H

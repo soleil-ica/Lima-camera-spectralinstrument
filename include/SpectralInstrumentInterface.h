@@ -19,8 +19,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
-#ifndef SPECTRALINTERFACE_H
-#define SPECTRALINTERFACE_H
+#ifndef SPECTRALINSTRUMENTINTERFACE_H
+#define SPECTRALINSTRUMENTINTERFACE_H
 #include "SpectralInstrumentCompatibility.h"
 #include "lima/HwInterface.h"
 #include "lima/HwEventCtrlObj.h"
@@ -33,18 +33,18 @@
 
 namespace lima
 {
-    namespace Spectral
+    namespace SpectralInstrument
     {
 	class Interface;
 
 /*******************************************************************
  * \class Interface
- * \brief Spectral hardware interface
+ * \brief SpectralInstrument hardware interface
  *******************************************************************/
 
 	class LIBSPECTRAL_API Interface : public HwInterface
 	{
-	    DEB_CLASS_NAMESPC(DebModCamera, "SpectralInterface", "Spectral");
+	    DEB_CLASS_NAMESPC(DebModCamera, "SpectralInstrumentInterface", "SpectralInstrument");
 
 	public:
 	    Interface(Camera& cam);
@@ -73,7 +73,7 @@ namespace lima
 	    mutable Cond     m_cond    ;
 	};
 
-    } // namespace Spectral
+    } // namespace SpectralInstrument
 } // namespace lima
 
-#endif // SpectralINTERFACE_H
+#endif // SPECTRALINSTRUMENTINTERFACE_H

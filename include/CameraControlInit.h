@@ -26,8 +26,8 @@
  * \date   Created on November 02, 2020
  ****************************************************************************************************/
 
-#ifndef SPECTRALCAMERACONTROLINIT_H
-#define SPECTRALCAMERACONTROLINIT_H
+#ifndef SPECTRALINFORMATIQUECAMERACONTROLINIT_H
+#define SPECTRALINFORMATIQUECAMERACONTROLINIT_H
 
 // SYSTEM
 #include <cstdlib>
@@ -43,9 +43,9 @@
 namespace lima
 {
 /*
- *  \namespace Spectral
+ *  \namespace SpectralInstrument
  */
-namespace Spectral 
+namespace SpectralInstrument 
 {
     // pre-defines the CameraControl class
     class CameraControl;
@@ -105,7 +105,7 @@ namespace Spectral
 
     } CameraControlInit;
 
-} // namespace Spectral
+} // namespace SpectralInstrument
 } // namespace lima
 
-#endif // SPECTRALCAMERACONTROLINIT_H
+#endif // SPECTRALINFORMATIQUECAMERACONTROLINIT_H

@@ -19,8 +19,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <http://www.gnu.org/licenses/>.
 //###########################################################################
-#ifndef SPECTRALROICTRLOBJ_H
-#define SPECTRALROICTRLOBJ_H
+#ifndef SPECTRALINSTRUMENTROICTRLOBJ_H
+#define SPECTRALINSTRUMENTROICTRLOBJ_H
 
 #include "SpectralInstrumentCompatibility.h"
 #include "lima/HwRoiCtrlObj.h"
@@ -28,18 +28,18 @@
 
 namespace lima
 {
-    namespace Spectral
+    namespace SpectralInstrument
     {
 
 
 /*******************************************************************
  * \class RoiCtrlObj
- * \brief Control object providing Spectral Roi interface
+ * \brief Control object providing SpectralInstrument Roi interface
  *******************************************************************/
 
 	class LIBSPECTRAL_API RoiCtrlObj : public HwRoiCtrlObj
 	{
-	    DEB_CLASS_NAMESPC(DebModCamera, "RoiCtrlObj", "Spectral");
+	    DEB_CLASS_NAMESPC(DebModCamera, "RoiCtrlObj", "SpectralInstrument");
 
 	public:
 	    RoiCtrlObj(Camera& cam);
@@ -54,8 +54,8 @@ namespace lima
 	};
 
 
-    } // namespace Spectral
+    } // namespace SpectralInstrument
 } // namespace lima
 
-#endif // SpectralROICTRLOBJ_H
+#endif // SPECTRALINSTRUMENTROICTRLOBJ_H
 
